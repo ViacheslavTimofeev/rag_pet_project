@@ -26,6 +26,13 @@ Design for modularity first. This repository should support swapping models, vec
 
 - Optimize for local development and reproducibility, not premature distribution.
 - Favor explicit data contracts between stages.
+- Use LangGraph for orchestration.
+- Use LlamaIndex for indexing and retrieval primitives.
+- Use Qdrant for vector storage.
+- Use Sentence Transformers for embeddings and reranking.
+- Use Ragas for evaluation.
+- Do not duplicate retrieval logic across orchestration and retrieval layers.
+- Do not mix chunking, retrieval, and generation without explicit contracts between them.
 - Keep scripts as thin orchestration wrappers around reusable `src/` modules.
 - Make room for experimentation, but keep the default path simple.
 - When touching more than one subsystem, define what is stable and what is pluggable.

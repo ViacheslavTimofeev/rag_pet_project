@@ -52,6 +52,12 @@ This repository is a local-first RAG assistant project. Treat it as a production
 - When behavior changes, update the relevant config or docs in the same task.
 - Keep skills concise and trigger-oriented. Detailed mechanics belong in code or references.
 
+## Python Environment
+
+- Always run Python-related commands in the Conda environment `rag`.
+- Preferred command pattern: `conda run -n rag python -m ...`
+- Do not rely on Windows App Execution Alias entries such as `python.exe` or `python3.exe`.
+
 ## Verification
 
 When implementing or changing behavior, verify with the smallest relevant proof:
