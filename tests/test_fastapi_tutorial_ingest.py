@@ -5,7 +5,7 @@ import unittest
 import uuid
 
 from src.ingest import CharacterTextChunker
-from src.ingest.fastapi_tutorial import FastAPITutorialIngestor
+from src.ingest.raw_creation import FastAPITutorialIngestor
 from src.ingest.types import RawDocument
 
 

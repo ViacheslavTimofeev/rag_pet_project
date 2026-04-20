@@ -1,0 +1,30 @@
+embedding:
+  active_backend: sentence_transformer
+
+  sentence_transformer:
+    model_name: sentence-transformers/all-MiniLM-L6-v2
+    device: null
+    batch_size: 32
+    normalize_embeddings: true
+
+  # Optional future backend example. Keep this commented until you add
+  # an OpenAI-based embedding adapter and want to switch active_backend.
+  # openai:
+  #   model: text-embedding-3-large
+  #   api_key_env: OPENAI_API_KEY
+
+llm:
+  active_backend: null
+
+  # Keep the generation layer pluggable. Fill this when src/llm/ is added.
+  openai:
+    model: null
+    temperature: 0.0
+    max_tokens: null
+    api_key_env: OPENAI_API_KEY
+
+  local:
+    provider: null
+    model_path: null
+    temperature: 0.0
+    max_tokens: null
