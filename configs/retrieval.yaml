@@ -1,0 +1,10 @@
+retrieval:
+  llamaindex:
+    top_k: 5
+    model_config_path: configs/model.yaml
+
+    qdrant:
+      collection_name: documents
+      url: http://localhost:6333
+      api_key_env: null
+      prefer_grpc: false
