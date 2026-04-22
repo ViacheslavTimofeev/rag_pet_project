@@ -53,3 +53,45 @@ class Retriever(ABC):
     @abstractmethod
     def retrieve(self, query: str) -> list[RetrievedChunk]:
         """Retrieve ranked chunks for a user query."""
+
+
+class Reranker(ABC):
+    """Stable interface for reranking retrieved chunks before generation."""
+
+    @abstractmethod
+    def rerank(
+        self,
+        query: str,
+        chunks: list[RetrievedChunk],
+        *,
+        top_k: int | None = None,
+    ) -> list[RetrievedChunk]:
+        """Reorder retrieved chunks by relevance and optionally trim to top-k."""
+
+
+@dataclass(slots=True)
+class ContextSource:
+    """Source metadata included in built LLM context payloads."""
+
+    chunk_id: str
+    document_id: str
+    rank: int
+    score: float
+    metadata: dict[str, str | int] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class BuiltContext:
+    """Structured context payload assembled from retrieved chunks."""
+
+    text: str
+    sources: list[ContextSource] = field(default_factory=list)
+    used_chunks: list[RetrievedChunk] = field(default_factory=list)
+
+
+class ContextBuilder(ABC):
+    """Stable interface for assembling generation-ready context payloads."""
+
+    @abstractmethod
+    def build(self, chunks: list[RetrievedChunk]) -> BuiltContext:
+        """Build context text and source descriptors from ranked chunks."""

@@ -8,3 +8,12 @@ retrieval:
       url: http://localhost:6333
       api_key_env: null
       prefer_grpc: false
+
+  reranker:
+    active_backend: identity
+    top_k: 5
+
+    # cross_encoder:
+    #   model_name: BAAI/bge-reranker-base
+    #   batch_size: 32
+    #   device: null
