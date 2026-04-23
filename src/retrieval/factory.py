@@ -6,8 +6,11 @@ from typing import Any, Mapping
 
 from src.embeddings.factory import load_model_config
 
+from .context_builder import TokenBudgetContextBuilder
+from .pipeline import RetrievalPipeline
+from .reranker import CrossEncoderReranker, IdentityReranker
 from .retriever import LlamaIndexRetriever
-from .types import Retriever
+from .types import ContextBuilder, Reranker, Retriever
 
 DEFAULT_RETRIEVAL_CONFIG_PATH = Path("configs/retrieval.yaml")
 
@@ -69,6 +72,62 @@ def build_retriever(
     )
 
 
+def build_retrieval_pipeline_from_config(
+    config: Mapping[str, Any],
+    *,
+    llamaindex_retriever: Any | None = None,
+    reranker: Reranker | None = None,
+    context_builder: ContextBuilder | None = None,
+) -> RetrievalPipeline:
+    """Build retrieval runtime flow: retrieve, rerank, then assemble context."""
+
+    retrieval_config = config.get("retrieval")
+    if not isinstance(retrieval_config, Mapping):
+        raise ValueError("Retrieval config must contain a 'retrieval' mapping.")
+
+    built_retriever = build_retriever_from_config(
+        config,
+        llamaindex_retriever=llamaindex_retriever,
+    )
+
+    reranker_config = _get_mapping(retrieval_config, "reranker")
+    built_reranker = reranker or _build_reranker_from_config(reranker_config)
+    rerank_top_k = _get_optional_positive_int(reranker_config, "top_k")
+
+    context_builder_config = retrieval_config.get("context_builder", {})
+    if context_builder_config is None:
+        context_builder_config = {}
+    if not isinstance(context_builder_config, Mapping):
+        raise ValueError("'context_builder' must be a mapping or null.")
+    built_context_builder = context_builder or _build_context_builder_from_config(
+        context_builder_config
+    )
+
+    return RetrievalPipeline(
+        retriever=built_retriever,
+        reranker=built_reranker,
+        context_builder=built_context_builder,
+        rerank_top_k=rerank_top_k,
+    )
+
+
+def build_retrieval_pipeline(
+    config_path: str | Path = DEFAULT_RETRIEVAL_CONFIG_PATH,
+    *,
+    llamaindex_retriever: Any | None = None,
+    reranker: Reranker | None = None,
+    context_builder: ContextBuilder | None = None,
+) -> RetrievalPipeline:
+    """Load config from disk and build the composed retrieval runtime flow."""
+
+    return build_retrieval_pipeline_from_config(
+        load_retrieval_config(config_path),
+        llamaindex_retriever=llamaindex_retriever,
+        reranker=reranker,
+        context_builder=context_builder,
+    )
+
+
 def _build_llamaindex_retriever(config: Mapping[str, Any]) -> Any:
     """Construct the raw LlamaIndex retriever used by the project wrapper."""
 
@@ -91,6 +150,32 @@ def _build_llamaindex_retriever(config: Mapping[str, Any]) -> Any:
         embed_model=embed_model,
     )
     return index.as_retriever(similarity_top_k=_get_int(llamaindex_config, "top_k", default=5))
+
+
+def _build_reranker_from_config(config: Mapping[str, Any]) -> Reranker:
+    active_backend = _require_str(config, "active_backend")
+    if active_backend == "identity":
+        return IdentityReranker()
+    if active_backend == "cross_encoder":
+        cross_encoder_config = _get_mapping(config, "cross_encoder")
+        return CrossEncoderReranker(
+            _require_str(cross_encoder_config, "model_name"),
+            batch_size=_get_int(cross_encoder_config, "batch_size", default=32),
+            device=_get_optional_str(cross_encoder_config, "device"),
+        )
+    raise ValueError(
+        "Unsupported reranker backend. Expected one of: 'identity', "
+        "'cross_encoder'."
+    )
+
+
+def _build_context_builder_from_config(config: Mapping[str, Any]) -> ContextBuilder:
+    return TokenBudgetContextBuilder(
+        max_chunks=_get_optional_positive_int(config, "max_chunks", default=5),
+        max_chars=_get_optional_positive_int(config, "max_chars", default=4000),
+        dedup_by_document=_get_bool(config, "dedup_by_document", default=True),
+        chunk_separator=_get_non_empty_str(config, "chunk_separator", default="\n\n"),
+    )
 
 
 def _build_llamaindex_embedding_model(model_config: Mapping[str, Any]) -> Any:
@@ -185,6 +270,27 @@ def _get_int(config: Mapping[str, Any], key: str, *, default: int) -> int:
     value = config.get(key, default)
     if not isinstance(value, int) or value <= 0:
         raise ValueError(f"'{key}' must be a positive integer.")
+    return value
+
+
+def _get_optional_positive_int(
+    config: Mapping[str, Any],
+    key: str,
+    *,
+    default: int | None = None,
+) -> int | None:
+    value = config.get(key, default)
+    if value is None:
+        return None
+    if not isinstance(value, int) or value <= 0:
+        raise ValueError(f"'{key}' must be a positive integer or null.")
+    return value
+
+
+def _get_non_empty_str(config: Mapping[str, Any], key: str, *, default: str) -> str:
+    value = config.get(key, default)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"'{key}' must be a non-empty string.")
     return value
 
 

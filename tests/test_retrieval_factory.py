@@ -8,11 +8,15 @@ from unittest.mock import patch
 
 from src.retrieval.factory import (
     _build_llamaindex_retriever,
+    build_retrieval_pipeline,
+    build_retrieval_pipeline_from_config,
     build_retriever,
     build_retriever_from_config,
     load_retrieval_config,
 )
+from src.retrieval.pipeline import RetrievalPipeline
 from src.retrieval.retriever import LlamaIndexRetriever
+from src.retrieval.types import BuiltContext, ContextBuilder, Reranker, RetrievedChunk
 
 
 class FakeLlamaIndexBackend:
@@ -61,6 +65,36 @@ class FakeVectorStoreIndex:
 
 class FakeCoreModule:
     VectorStoreIndex = FakeVectorStoreIndex
+
+
+class FakeReranker(Reranker):
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def rerank(
+        self,
+        query: str,
+        chunks: list[RetrievedChunk],
+        *,
+        top_k: int | None = None,
+    ) -> list[RetrievedChunk]:
+        self.calls.append(
+            {
+                "query": query,
+                "chunk_ids": [chunk.chunk_id for chunk in chunks],
+                "top_k": top_k,
+            }
+        )
+        return list(chunks)
+
+
+class FakeContextBuilder(ContextBuilder):
+    def __init__(self) -> None:
+        self.calls: list[list[str]] = []
+
+    def build(self, chunks: list[RetrievedChunk]) -> BuiltContext:
+        self.calls.append([chunk.chunk_id for chunk in chunks])
+        return BuiltContext(text="built")
 
 
 class RetrievalFactoryTests(unittest.TestCase):
@@ -121,6 +155,69 @@ class RetrievalFactoryTests(unittest.TestCase):
         )
         self.assertIs(result, build_from_config.return_value)
 
+    def test_build_retrieval_pipeline_from_config_composes_runtime_chain(self) -> None:
+        config = {
+            "retrieval": {
+                "llamaindex": {
+                    "top_k": 5,
+                },
+                "reranker": {
+                    "active_backend": "identity",
+                    "top_k": 3,
+                },
+                "context_builder": {
+                    "max_chunks": 2,
+                    "max_chars": 100,
+                    "dedup_by_document": True,
+                    "chunk_separator": "\n\n",
+                },
+            }
+        }
+        backend = FakeLlamaIndexBackend()
+        reranker = FakeReranker()
+        context_builder = FakeContextBuilder()
+
+        pipeline = build_retrieval_pipeline_from_config(
+            config,
+            llamaindex_retriever=backend,
+            reranker=reranker,
+            context_builder=context_builder,
+        )
+
+        self.assertIsInstance(pipeline, RetrievalPipeline)
+        built_context = pipeline.run("hello")
+        self.assertEqual(built_context.text, "built")
+        self.assertEqual(backend.calls, ["hello"])
+        self.assertEqual(reranker.calls, [{"query": "hello", "chunk_ids": [], "top_k": 3}])
+        self.assertEqual(context_builder.calls, [[]])
+
+    def test_build_retrieval_pipeline_loads_config_before_building(self) -> None:
+        with patch("src.retrieval.factory.load_retrieval_config") as load_config:
+            with patch(
+                "src.retrieval.factory.build_retrieval_pipeline_from_config"
+            ) as build_from_config:
+                config = {"retrieval": {"llamaindex": {}, "reranker": {"active_backend": "identity"}}}
+                backend = FakeLlamaIndexBackend()
+                reranker = FakeReranker()
+                context_builder = FakeContextBuilder()
+                load_config.return_value = config
+                build_from_config.return_value = object()
+
+                result = build_retrieval_pipeline(
+                    llamaindex_retriever=backend,
+                    reranker=reranker,
+                    context_builder=context_builder,
+                )
+
+        load_config.assert_called_once()
+        build_from_config.assert_called_once_with(
+            config,
+            llamaindex_retriever=backend,
+            reranker=reranker,
+            context_builder=context_builder,
+        )
+        self.assertIs(result, build_from_config.return_value)
+
     def test_build_llamaindex_retriever_builds_qdrant_backed_retriever(self) -> None:
         config = {
             "top_k": 7,
@@ -166,16 +263,25 @@ class RetrievalFactoryTests(unittest.TestCase):
 
         build_qdrant_client.assert_called_once_with(config["qdrant"])
         self.assertEqual(retriever.similarity_top_k, 7)
-        self.assertIsInstance(FakeVectorStoreIndex.last_call["vector_store"], FakeQdrantVectorStore)
+        last_call = FakeVectorStoreIndex.last_call
+        self.assertIsNotNone(last_call)
+        assert last_call is not None
+
+        vector_store = last_call["vector_store"]
+        embed_model = last_call["embed_model"]
+        assert isinstance(vector_store, FakeQdrantVectorStore)
+        assert isinstance(embed_model, FakeHuggingFaceEmbedding)
+
+        self.assertIsInstance(vector_store, FakeQdrantVectorStore)
         self.assertEqual(
-            FakeVectorStoreIndex.last_call["vector_store"].kwargs,
+            vector_store.kwargs,
             {
                 "client": fake_client,
                 "collection_name": "docs",
             },
         )
         self.assertEqual(
-            FakeVectorStoreIndex.last_call["embed_model"].kwargs,
+            embed_model.kwargs,
             {
                 "model_name": "sentence-transformers/all-MiniLM-L6-v2",
                 "device": "cpu",
