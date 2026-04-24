@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from src.llm.types import LLMGenerationParams, LLMRequest
@@ -41,7 +42,7 @@ class GroundedPromptBuilder:
         built_context: BuiltContext,
         *,
         params: LLMGenerationParams | None = None,
-        metadata: dict[str, str | int | float | bool] | None = None,
+        metadata: Mapping[str, str | int | float | bool] | None = None,
     ) -> LLMRequest:
         normalized_query = query.strip()
         if not normalized_query:

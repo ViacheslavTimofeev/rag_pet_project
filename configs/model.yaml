@@ -14,15 +14,22 @@ embedding:
   #   api_key_env: OPENAI_API_KEY
 
 llm:
-  active_backend: null
+  active_backend: llamacpp
 
-  # Keep the generation layer pluggable. Fill this when src/llm/ is added.
-  openai:
-    model: null
-    temperature: 0.0
-    max_tokens: null
-    api_key_env: OPENAI_API_KEY
+  llamacpp:
+    # Baseline local model (example): Qwen3-14B GGUF file path.
+    model_path: models/qwen3-14b-instruct-q4_k_m.gguf
+    n_ctx: 8192
+    n_gpu_layers: -1
+    temperature: 0.1
+    max_tokens: 1024
+    top_p: 0.9
+    stop: []
+    seed: 42
+    chat_format: null
+    verbose: false
 
+  # Optional future backend example for local non-llama.cpp providers.
   local:
     provider: null
     model_path: null
