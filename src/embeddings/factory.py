@@ -53,6 +53,9 @@ def build_embedder_from_config(config: Mapping[str, Any]) -> EmbeddingModel:
             ),
             batch_size=_get_int(backend_config, "batch_size", default=32),
             device=_get_optional_str(backend_config, "device"),
+            local_files_only=_get_bool(
+                backend_config, "local_files_only", default=False
+            ),
         )
 
     raise ValueError(f"Unsupported embedding backend: {active_backend!r}")

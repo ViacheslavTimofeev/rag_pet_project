@@ -1,0 +1,40 @@
+api:
+  title: RAG Local Assistant API
+  version: 0.1.0
+  description: Local-first API for retrieval-augmented assistant workflows.
+
+  server:
+    host: 127.0.0.1
+    port: 8000
+    reload: false
+    log_level: info
+    workers: 1
+
+  cors:
+    enabled: true
+    allow_origins:
+      - http://localhost:3000
+      - http://127.0.0.1:3000
+    allow_methods:
+      - GET
+      - POST
+    allow_headers:
+      - "*"
+    allow_credentials: false
+
+  request:
+    timeout_seconds: 120
+    max_question_chars: 4000
+
+  runtime:
+    retrieval_config_path: configs/retrieval.yaml
+    model_config_path: configs/model.yaml
+    eager_startup: false
+
+  ui:
+    enabled: true
+    host: 127.0.0.1
+    port: 7860
+    share: false
+    inbrowser: true
+    api_base_url: http://127.0.0.1:8000

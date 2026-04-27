@@ -194,6 +194,7 @@ def _build_llamaindex_embedding_model(model_config: Mapping[str, Any]) -> Any:
         device=_get_optional_str(backend_config, "device"),
         embed_batch_size=_get_int(backend_config, "batch_size", default=32),
         normalize=_get_bool(backend_config, "normalize_embeddings", default=True),
+        local_files_only=_get_bool(backend_config, "local_files_only", default=False),
     )
 
 
@@ -202,7 +203,8 @@ def _build_qdrant_client(config: Mapping[str, Any]) -> Any:
         from qdrant_client import QdrantClient
     except ImportError as exc:
         raise ImportError(
-            "qdrant-client is required to build the LlamaIndex retriever."
+            "qdrant-client is required to build the LlamaIndex retriever. "
+            f"Original import error: {exc}"
         ) from exc
 
     return QdrantClient(
@@ -329,7 +331,7 @@ def _get_llamaindex_qdrant_vector_store_cls() -> Any:
     except ImportError as exc:
         raise ImportError(
             "llama-index-vector-stores-qdrant is required to build the "
-            "LlamaIndex retriever."
+            f"LlamaIndex retriever. Original import error: {exc}"
         ) from exc
     return QdrantVectorStore
 
@@ -340,6 +342,6 @@ def _get_llamaindex_huggingface_embedding_cls() -> Any:
     except ImportError as exc:
         raise ImportError(
             "llama-index-embeddings-huggingface is required to build the "
-            "LlamaIndex retriever."
+            f"LlamaIndex retriever. Original import error: {exc}"
         ) from exc
     return HuggingFaceEmbedding

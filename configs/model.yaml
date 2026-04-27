@@ -6,6 +6,7 @@ embedding:
     device: null
     batch_size: 32
     normalize_embeddings: true
+    local_files_only: true
 
   # Optional future backend example. Keep this commented until you add
   # an OpenAI-based embedding adapter and want to switch active_backend.
@@ -17,8 +18,8 @@ llm:
   active_backend: llamacpp
 
   llamacpp:
-    # Baseline local model (example): Qwen3-14B GGUF file path.
-    model_path: models/qwen3-14b-instruct-q4_k_m.gguf
+    # Baseline local model: Qwen3-14B GGUF file path.
+    model_path: models/Qwen3-14B-Q4_K_M.gguf
     n_ctx: 8192
     n_gpu_layers: -1
     temperature: 0.1

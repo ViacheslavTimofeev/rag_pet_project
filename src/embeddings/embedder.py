@@ -16,12 +16,14 @@ class SentenceTransformerEmbedder(EmbeddingModel):
         normalize_embeddings: bool = True,
         batch_size: int = 32,
         device: str | None = None,
+        local_files_only: bool = False,
         model: Any | None = None,
     ) -> None:
         self._model_name = model_name
         self._normalize_embeddings = normalize_embeddings
         self._batch_size = batch_size
         self._device = device
+        self._local_files_only = local_files_only
         self._model = model if model is not None else self._load_model()
 
     @property
@@ -57,5 +59,7 @@ class SentenceTransformerEmbedder(EmbeddingModel):
         model_kwargs: dict[str, Any] = {}
         if self._device is not None:
             model_kwargs["device"] = self._device
+        if self._local_files_only:
+            model_kwargs["local_files_only"] = True
 
         return SentenceTransformer(self._model_name, **model_kwargs)

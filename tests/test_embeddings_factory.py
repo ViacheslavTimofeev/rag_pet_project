@@ -38,6 +38,7 @@ class EmbeddingsFactoryTests(unittest.TestCase):
                     "batch_size": 16,
                     "normalize_embeddings": False,
                     "device": "cpu",
+                    "local_files_only": True,
                 },
             }
         }
@@ -52,6 +53,7 @@ class EmbeddingsFactoryTests(unittest.TestCase):
             normalize_embeddings=False,
             batch_size=16,
             device="cpu",
+            local_files_only=True,
         )
 
     def test_build_embedder_loads_default_config_path(self) -> None:

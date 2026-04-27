@@ -237,6 +237,7 @@ class RetrievalFactoryTests(unittest.TestCase):
                     "device": "cpu",
                     "batch_size": 16,
                     "normalize_embeddings": False,
+                    "local_files_only": True,
                 },
             }
         }
@@ -287,6 +288,7 @@ class RetrievalFactoryTests(unittest.TestCase):
                 "device": "cpu",
                 "embed_batch_size": 16,
                 "normalize": False,
+                "local_files_only": True,
             },
         )
 
