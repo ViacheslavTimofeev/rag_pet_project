@@ -3,7 +3,6 @@ embedding:
 
   sentence_transformer:
     model_name: sentence-transformers/all-MiniLM-L6-v2
-    device: null
     batch_size: 32
     normalize_embeddings: true
     local_files_only: true

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from src.embeddings.factory import load_model_config
+from src.runtime.device import require_cuda_device
 
 from .context_builder import TokenBudgetContextBuilder
 from .pipeline import RetrievalPipeline
@@ -161,7 +162,7 @@ def _build_reranker_from_config(config: Mapping[str, Any]) -> Reranker:
         return CrossEncoderReranker(
             _require_str(cross_encoder_config, "model_name"),
             batch_size=_get_int(cross_encoder_config, "batch_size", default=32),
-            device=_get_optional_str(cross_encoder_config, "device"),
+            device=require_cuda_device(),
         )
     raise ValueError(
         "Unsupported reranker backend. Expected one of: 'identity', "
@@ -191,7 +192,7 @@ def _build_llamaindex_embedding_model(model_config: Mapping[str, Any]) -> Any:
     embedding_cls = _get_llamaindex_huggingface_embedding_cls()
     return embedding_cls(
         model_name=_require_str(backend_config, "model_name"),
-        device=_get_optional_str(backend_config, "device"),
+        device=require_cuda_device(),
         embed_batch_size=_get_int(backend_config, "batch_size", default=32),
         normalize=_get_bool(backend_config, "normalize_embeddings", default=True),
         local_files_only=_get_bool(backend_config, "local_files_only", default=False),

@@ -37,24 +37,40 @@ class EmbeddingsFactoryTests(unittest.TestCase):
                     "model_name": "sentence-transformers/all-MiniLM-L6-v2",
                     "batch_size": 16,
                     "normalize_embeddings": False,
-                    "device": "cpu",
                     "local_files_only": True,
                 },
             }
         }
 
-        with patch("src.embeddings.factory.SentenceTransformerEmbedder") as embedder_cls:
-            instance = embedder_cls.return_value
-            embedder = build_embedder_from_config(config)
+        with patch("src.embeddings.factory.require_cuda_device", return_value="cuda"):
+            with patch("src.embeddings.factory.SentenceTransformerEmbedder") as embedder_cls:
+                instance = embedder_cls.return_value
+                embedder = build_embedder_from_config(config)
 
         self.assertIs(embedder, instance)
         embedder_cls.assert_called_once_with(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
             normalize_embeddings=False,
             batch_size=16,
-            device="cpu",
+            device="cuda",
             local_files_only=True,
         )
+
+    def test_build_embedder_from_config_requires_cuda(self) -> None:
+        config = {
+            "embedding": {
+                "active_backend": "sentence_transformer",
+                "sentence_transformer": {
+                    "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+                },
+            }
+        }
+
+        with patch("src.embeddings.factory.require_cuda_device", return_value="cuda"):
+            with patch("src.embeddings.factory.SentenceTransformerEmbedder") as embedder_cls:
+                build_embedder_from_config(config)
+
+        self.assertEqual(embedder_cls.call_args.kwargs["device"], "cuda")
 
     def test_build_embedder_loads_default_config_path(self) -> None:
         with patch("src.embeddings.factory.load_model_config") as load_config:

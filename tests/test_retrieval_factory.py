@@ -191,6 +191,38 @@ class RetrievalFactoryTests(unittest.TestCase):
         self.assertEqual(reranker.calls, [{"query": "hello", "chunk_ids": [], "top_k": 3}])
         self.assertEqual(context_builder.calls, [[]])
 
+    def test_build_retrieval_pipeline_uses_cuda_for_cross_encoder_reranker(self) -> None:
+        config = {
+            "retrieval": {
+                "llamaindex": {
+                    "top_k": 5,
+                },
+                "reranker": {
+                    "active_backend": "cross_encoder",
+                    "cross_encoder": {
+                        "model_name": "BAAI/bge-reranker-base",
+                        "batch_size": 16,
+                    },
+                },
+            }
+        }
+        backend = FakeLlamaIndexBackend()
+
+        with patch("src.retrieval.factory.require_cuda_device", return_value="cuda"):
+            with patch("src.retrieval.factory.CrossEncoderReranker") as reranker_cls:
+                reranker_cls.return_value = FakeReranker()
+                build_retrieval_pipeline_from_config(
+                    config,
+                    llamaindex_retriever=backend,
+                    context_builder=FakeContextBuilder(),
+                )
+
+        reranker_cls.assert_called_once_with(
+            "BAAI/bge-reranker-base",
+            batch_size=16,
+            device="cuda",
+        )
+
     def test_build_retrieval_pipeline_loads_config_before_building(self) -> None:
         with patch("src.retrieval.factory.load_retrieval_config") as load_config:
             with patch(
@@ -234,7 +266,6 @@ class RetrievalFactoryTests(unittest.TestCase):
                 "active_backend": "sentence_transformer",
                 "sentence_transformer": {
                     "model_name": "sentence-transformers/all-MiniLM-L6-v2",
-                    "device": "cpu",
                     "batch_size": 16,
                     "normalize_embeddings": False,
                     "local_files_only": True,
@@ -248,19 +279,20 @@ class RetrievalFactoryTests(unittest.TestCase):
                 "src.retrieval.factory._get_llamaindex_huggingface_embedding_cls",
                 return_value=FakeHuggingFaceEmbedding,
             ):
-                with patch(
-                    "src.retrieval.factory._build_qdrant_client",
-                    return_value=fake_client,
-                ) as build_qdrant_client:
+                with patch("src.retrieval.factory.require_cuda_device", return_value="cuda"):
                     with patch(
-                        "src.retrieval.factory._get_llamaindex_qdrant_vector_store_cls",
-                        return_value=FakeQdrantVectorStore,
-                    ):
+                        "src.retrieval.factory._build_qdrant_client",
+                        return_value=fake_client,
+                    ) as build_qdrant_client:
                         with patch(
-                            "src.retrieval.factory._get_llamaindex_core_module",
-                            return_value=FakeCoreModule,
+                            "src.retrieval.factory._get_llamaindex_qdrant_vector_store_cls",
+                            return_value=FakeQdrantVectorStore,
                         ):
-                            retriever = _build_llamaindex_retriever(config)
+                            with patch(
+                                "src.retrieval.factory._get_llamaindex_core_module",
+                                return_value=FakeCoreModule,
+                            ):
+                                retriever = _build_llamaindex_retriever(config)
 
         build_qdrant_client.assert_called_once_with(config["qdrant"])
         self.assertEqual(retriever.similarity_top_k, 7)
@@ -285,12 +317,54 @@ class RetrievalFactoryTests(unittest.TestCase):
             embed_model.kwargs,
             {
                 "model_name": "sentence-transformers/all-MiniLM-L6-v2",
-                "device": "cpu",
+                "device": "cuda",
                 "embed_batch_size": 16,
                 "normalize": False,
                 "local_files_only": True,
             },
         )
+
+    def test_build_llamaindex_retriever_requires_cuda_embedding_device(self) -> None:
+        config = {
+            "top_k": 7,
+            "model_config_path": "configs/model.yaml",
+            "qdrant": {
+                "collection_name": "docs",
+                "url": "http://localhost:6333",
+            },
+        }
+        model_config = {
+            "embedding": {
+                "active_backend": "sentence_transformer",
+                "sentence_transformer": {
+                    "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+                },
+            }
+        }
+
+        with patch("src.retrieval.factory.load_model_config", return_value=model_config):
+            with patch("src.retrieval.factory.require_cuda_device", return_value="cuda"):
+                with patch(
+                    "src.retrieval.factory._get_llamaindex_huggingface_embedding_cls",
+                    return_value=FakeHuggingFaceEmbedding,
+                ):
+                    with patch("src.retrieval.factory._build_qdrant_client", return_value=object()):
+                        with patch(
+                            "src.retrieval.factory._get_llamaindex_qdrant_vector_store_cls",
+                            return_value=FakeQdrantVectorStore,
+                        ):
+                            with patch(
+                                "src.retrieval.factory._get_llamaindex_core_module",
+                                return_value=FakeCoreModule,
+                            ):
+                                _build_llamaindex_retriever(config)
+
+        last_call = FakeVectorStoreIndex.last_call
+        self.assertIsNotNone(last_call)
+        assert last_call is not None
+        embed_model = last_call["embed_model"]
+        assert isinstance(embed_model, FakeHuggingFaceEmbedding)
+        self.assertEqual(embed_model.kwargs["device"], "cuda")
 
     def test_build_llamaindex_retriever_rejects_unsupported_embedding_backend(self) -> None:
         config = {

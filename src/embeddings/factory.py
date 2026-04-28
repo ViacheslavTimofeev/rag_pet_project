@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Mapping
 
+from src.runtime.device import require_cuda_device
+
 from .embedder import SentenceTransformerEmbedder
 from .types import EmbeddingModel
 
@@ -52,7 +54,7 @@ def build_embedder_from_config(config: Mapping[str, Any]) -> EmbeddingModel:
                 backend_config, "normalize_embeddings", default=True
             ),
             batch_size=_get_int(backend_config, "batch_size", default=32),
-            device=_get_optional_str(backend_config, "device"),
+            device=require_cuda_device(),
             local_files_only=_get_bool(
                 backend_config, "local_files_only", default=False
             ),
@@ -71,15 +73,6 @@ def _require_str(config: Mapping[str, Any], key: str) -> str:
     value = config.get(key)
     if not isinstance(value, str) or not value:
         raise ValueError(f"'{key}' must be a non-empty string.")
-    return value
-
-
-def _get_optional_str(config: Mapping[str, Any], key: str) -> str | None:
-    value = config.get(key)
-    if value is None:
-        return None
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"'{key}' must be a non-empty string or null.")
     return value
 
 

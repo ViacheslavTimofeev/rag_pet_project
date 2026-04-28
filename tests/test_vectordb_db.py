@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import unittest
 from unittest.mock import patch
+from uuid import NAMESPACE_URL, uuid5
 
 from src.embeddings.types import EmbeddedChunk
 from src.vectordb.db import QdrantVectorStore
@@ -86,8 +87,9 @@ class QdrantVectorStoreTests(unittest.TestCase):
 
         self.assertEqual(len(client.upserts), 1)
         point = client.upserts[0]["points"][0]
-        self.assertEqual(point.id, "c1")
+        self.assertEqual(point.id, str(uuid5(NAMESPACE_URL, "c1")))
         self.assertEqual(point.vector, [1.0, 2.0])
+        self.assertEqual(point.payload["chunk_id"], "c1")
         self.assertEqual(point.payload["metadata"]["section"], "intro")
 
     def test_search_maps_qdrant_points_to_search_results(self) -> None:

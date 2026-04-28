@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+from uuid import NAMESPACE_URL, uuid5
 
 from src.embeddings.types import EmbeddedChunk, EmbeddingVector
 
@@ -66,7 +67,7 @@ class QdrantVectorStore(VectorStore):
         models = self._get_models_module()
         points = [
             models.PointStruct(
-                id=chunk.chunk_id,
+                id=str(uuid5(NAMESPACE_URL, chunk.chunk_id)),
                 vector=chunk.vector,
                 payload=self._payload_from_chunk(chunk),
             )

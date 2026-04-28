@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from sentence_transformers import SentenceTransformer
+
 from .types import EmbeddingModel, EmbeddingVector
 
 
@@ -48,14 +50,6 @@ class SentenceTransformerEmbedder(EmbeddingModel):
         return vectors.tolist()
 
     def _load_model(self) -> Any:
-        try:
-            from sentence_transformers import SentenceTransformer
-        except ImportError as exc:
-            raise ImportError(
-                "sentence-transformers is required to use "
-                "SentenceTransformerEmbedder."
-            ) from exc
-
         model_kwargs: dict[str, Any] = {}
         if self._device is not None:
             model_kwargs["device"] = self._device

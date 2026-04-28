@@ -21,7 +21,6 @@ retrieval:
     # cross_encoder:
     #   model_name: BAAI/bge-reranker-base
     #   batch_size: 32
-    #   device: null
 
   context_builder:
     max_chunks: 5
