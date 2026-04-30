@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
+from qdrant_client import QdrantClient, models
+
 from src.embeddings.types import EmbeddedChunk, EmbeddingVector
 
 from .indexing import VectorStore
@@ -96,13 +98,6 @@ class QdrantVectorStore(VectorStore):
         return [self._search_result_from_point(point) for point in points]
 
     def _build_client(self) -> Any:
-        try:
-            from qdrant_client import QdrantClient
-        except ImportError as exc:
-            raise ImportError(
-                "qdrant-client is required to use QdrantVectorStore."
-            ) from exc
-
         return QdrantClient(
             url=self._url,
             api_key=self._api_key,
@@ -110,13 +105,6 @@ class QdrantVectorStore(VectorStore):
         )
 
     def _get_models_module(self) -> Any:
-        try:
-            from qdrant_client import models
-        except ImportError as exc:
-            raise ImportError(
-                "qdrant-client is required to use QdrantVectorStore."
-            ) from exc
-
         return models
 
     def _collection_exists(self, collection_name: str) -> bool:

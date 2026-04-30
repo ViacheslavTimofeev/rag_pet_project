@@ -27,7 +27,7 @@ llm:
     stop: []
     seed: 42
     chat_format: null
-    verbose: false
+    verbose: true
 
   # Optional future backend example for local non-llama.cpp providers.
   local:
