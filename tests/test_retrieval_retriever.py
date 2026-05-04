@@ -135,9 +135,14 @@ class LlamaIndexRetrieverTests(unittest.TestCase):
                 FakeNodeWithScore(
                     node=FakeNode(
                         text="alpha",
-                        node_id="c1",
+                        node_id="node-uuid-1",
                         ref_doc_id="d1",
-                        metadata={"section": "intro", "page": 1, "ignored": 1.2},
+                        metadata={
+                            "chunk_id": "c1",
+                            "section": "intro",
+                            "page": 1,
+                            "ignored": 1.2,
+                        },
                     ),
                     score=0.91,
                 ),
@@ -161,7 +166,10 @@ class LlamaIndexRetrieverTests(unittest.TestCase):
         self.assertEqual([result.rank for result in results], [1, 2])
         self.assertEqual(results[0].score, 0.91)
         self.assertEqual(results[1].score, 0.0)
-        self.assertEqual(results[0].metadata, {"section": "intro", "page": 1})
+        self.assertEqual(
+            results[0].metadata,
+            {"chunk_id": "c1", "section": "intro", "page": 1},
+        )
 
     def test_retrieve_rejects_blank_query(self) -> None:
         retriever = LlamaIndexRetriever(retriever=RecordingLlamaRetriever([]))

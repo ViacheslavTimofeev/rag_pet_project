@@ -96,6 +96,32 @@ class RetrievalPipelineTests(unittest.TestCase):
         )
         self.assertEqual(context_builder.calls, [["c2", "c1"]])
 
+    def test_retrieve_returns_reranked_chunks_without_context_building(self) -> None:
+        retrieved_chunks = [
+            _chunk(chunk_id="c1", score=0.8, rank=1),
+            _chunk(chunk_id="c2", score=0.7, rank=2),
+        ]
+        reranked_chunks = [_chunk(chunk_id="c2", score=0.95, rank=1)]
+        retriever = RecordingRetriever(retrieved_chunks)
+        reranker = RecordingReranker(reranked_chunks)
+        context_builder = RecordingContextBuilder(BuiltContext(text="unused"))
+        pipeline = RetrievalPipeline(
+            retriever=retriever,
+            reranker=reranker,
+            context_builder=context_builder,
+            rerank_top_k=1,
+        )
+
+        result = pipeline.retrieve("what is alpha")
+
+        self.assertEqual([chunk.chunk_id for chunk in result], ["c2"])
+        self.assertEqual(retriever.calls, ["what is alpha"])
+        self.assertEqual(
+            reranker.calls,
+            [{"query": "what is alpha", "chunk_ids": ["c1", "c2"], "top_k": 1}],
+        )
+        self.assertEqual(context_builder.calls, [])
+
     def test_init_rejects_invalid_rerank_top_k(self) -> None:
         retriever = RecordingRetriever([])
         reranker = RecordingReranker([])

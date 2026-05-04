@@ -202,6 +202,10 @@ class RetrievalFactoryTests(unittest.TestCase):
                     "cross_encoder": {
                         "model_name": "BAAI/bge-reranker-base",
                         "batch_size": 16,
+                        "max_length": 512,
+                        "device": "cuda",
+                        "local_files_only": True,
+                        "use_sigmoid": False,
                     },
                 },
             }
@@ -220,7 +224,46 @@ class RetrievalFactoryTests(unittest.TestCase):
         reranker_cls.assert_called_once_with(
             "BAAI/bge-reranker-base",
             batch_size=16,
+            max_length=512,
             device="cuda",
+            local_files_only=True,
+            use_sigmoid=False,
+        )
+
+    def test_build_retrieval_pipeline_can_use_cpu_for_cross_encoder_reranker(self) -> None:
+        config = {
+            "retrieval": {
+                "llamaindex": {
+                    "top_k": 5,
+                },
+                "reranker": {
+                    "active_backend": "cross_encoder",
+                    "cross_encoder": {
+                        "model_name": "BAAI/bge-reranker-base",
+                        "device": "cpu",
+                    },
+                },
+            }
+        }
+        backend = FakeLlamaIndexBackend()
+
+        with patch("src.retrieval.factory.require_cuda_device") as require_cuda:
+            with patch("src.retrieval.factory.CrossEncoderReranker") as reranker_cls:
+                reranker_cls.return_value = FakeReranker()
+                build_retrieval_pipeline_from_config(
+                    config,
+                    llamaindex_retriever=backend,
+                    context_builder=FakeContextBuilder(),
+                )
+
+        require_cuda.assert_not_called()
+        reranker_cls.assert_called_once_with(
+            "BAAI/bge-reranker-base",
+            batch_size=32,
+            max_length=None,
+            device="cpu",
+            local_files_only=False,
+            use_sigmoid=False,
         )
 
     def test_build_retrieval_pipeline_loads_config_before_building(self) -> None:

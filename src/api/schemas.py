@@ -30,7 +30,7 @@ class SourceResponse(BaseModel):
     document_id: str
     rank: int
     score: float
-    metadata: dict[str, str | int] = Field(default_factory=dict)
+    metadata: PrimitiveMetadata = Field(default_factory=dict)
 
 
 class UsageResponse(BaseModel):

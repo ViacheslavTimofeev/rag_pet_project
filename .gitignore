@@ -40,6 +40,7 @@ Thumbs.db
 
 # Generated data artifacts
 data/processed/*.jsonl
+data/eval/runs/
 
 # Models
 *.gguf

@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 
 from src.vectordb.db import SearchResult
 
+PrimitiveMetadataValue = str | int | float | bool
+
 
 @dataclass(slots=True)
 class RetrievedChunk:
@@ -15,7 +17,7 @@ class RetrievedChunk:
     text: str
     score: float
     rank: int
-    metadata: dict[str, str | int] = field(default_factory=dict)
+    metadata: dict[str, PrimitiveMetadataValue] = field(default_factory=dict)
 
     @classmethod
     def from_search_result(
@@ -77,7 +79,7 @@ class ContextSource:
     document_id: str
     rank: int
     score: float
-    metadata: dict[str, str | int] = field(default_factory=dict)
+    metadata: dict[str, PrimitiveMetadataValue] = field(default_factory=dict)
 
 
 @dataclass(slots=True)

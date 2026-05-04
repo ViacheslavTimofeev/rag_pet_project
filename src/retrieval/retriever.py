@@ -6,7 +6,7 @@ from typing import Any
 from src.embeddings.types import EmbeddingModel
 from src.embeddings.types import EmbeddingVector
 
-from .types import RetrievedChunk, Retriever, SearchBackend
+from .types import PrimitiveMetadataValue, RetrievedChunk, Retriever, SearchBackend
 
 
 class VectorIndexRetriever(Retriever):
@@ -91,7 +91,7 @@ class LlamaIndexRetriever(Retriever):
     ) -> RetrievedChunk:
         node = getattr(node_with_score, "node", node_with_score)
         metadata = self._extract_metadata(node)
-        chunk_id = self._extract_chunk_id(node, rank=rank)
+        chunk_id = self._extract_chunk_id(node, metadata, rank=rank)
         document_id = self._extract_document_id(node, metadata)
         text = self._extract_text(node)
         score = float(getattr(node_with_score, "score", 0.0) or 0.0)
@@ -105,25 +105,35 @@ class LlamaIndexRetriever(Retriever):
             metadata=metadata,
         )
 
-    def _extract_metadata(self, node: Any) -> dict[str, str | int]:
+    def _extract_metadata(self, node: Any) -> dict[str, PrimitiveMetadataValue]:
         metadata = getattr(node, "metadata", {}) or {}
         if not isinstance(metadata, dict):
             return {}
 
-        normalized_metadata: dict[str, str | int] = {}
+        normalized_metadata: dict[str, PrimitiveMetadataValue] = {}
         for key, value in metadata.items():
             if isinstance(key, str) and isinstance(value, (str, int)):
                 normalized_metadata[key] = value
         return normalized_metadata
 
-    def _extract_chunk_id(self, node: Any, *, rank: int) -> str:
+    def _extract_chunk_id(
+        self,
+        node: Any,
+        metadata: dict[str, PrimitiveMetadataValue],
+        *,
+        rank: int,
+    ) -> str:
+        metadata_chunk_id = metadata.get("chunk_id")
+        if metadata_chunk_id is not None:
+            return str(metadata_chunk_id)
+
         node_id = getattr(node, "node_id", None) or getattr(node, "id_", None)
         if node_id is None:
             return f"retrieved-{rank}"
         return str(node_id)
 
     def _extract_document_id(
-        self, node: Any, metadata: dict[str, str | int]
+        self, node: Any, metadata: dict[str, PrimitiveMetadataValue]
     ) -> str:
         document_id = (
             getattr(node, "ref_doc_id", None)

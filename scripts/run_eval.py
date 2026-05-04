@@ -10,7 +10,7 @@ from src.eval import (
     run_retrieval_eval,
     save_retrieval_eval_run,
 )
-from src.retrieval import build_retriever
+from src.retrieval import build_retrieval_pipeline, build_retriever
 
 
 DEFAULT_EVAL_CONFIG_PATH = Path("configs/eval.yaml")
@@ -60,13 +60,15 @@ def run_retrieval_command(args: argparse.Namespace) -> int:
     k_values = get_k_values(config)
 
     examples = load_retrieval_eval_dataset(dataset_path)
-    retriever = build_retriever(args.retrieval_config)
+    retrieval_mode = get_retrieval_mode(config)
+    retriever = build_eval_retriever(args.retrieval_config, mode=retrieval_mode)
     result = run_retrieval_eval(
         retriever,
         examples,
         k_values=k_values,
         dataset_path=dataset_path,
         metadata={
+            "eval_retrieval_mode": retrieval_mode,
             "eval_config_path": str(args.eval_config),
             "retrieval_config_path": str(args.retrieval_config),
         },
@@ -113,6 +115,23 @@ def get_k_values(config: Mapping[str, Any]) -> list[int]:
     ):
         raise ValueError("'eval.retrieval.k_values' must be a list of positive integers.")
     return value
+
+
+def get_retrieval_mode(config: Mapping[str, Any]) -> str:
+    eval_config = get_mapping(config, "eval")
+    retrieval_config = get_mapping(eval_config, "retrieval")
+    value = retrieval_config.get("mode", "retriever")
+    if value not in {"retriever", "pipeline"}:
+        raise ValueError("'eval.retrieval.mode' must be 'retriever' or 'pipeline'.")
+    return value
+
+
+def build_eval_retriever(retrieval_config_path: Path, *, mode: str):
+    if mode == "retriever":
+        return build_retriever(retrieval_config_path)
+    if mode == "pipeline":
+        return build_retrieval_pipeline(retrieval_config_path)
+    raise ValueError("mode must be 'retriever' or 'pipeline'.")
 
 
 def print_retrieval_summary(result: Any, output_path: Path) -> None:

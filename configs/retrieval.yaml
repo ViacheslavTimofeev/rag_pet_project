@@ -5,7 +5,7 @@ retrieval:
     run_context_builder: true
 
   llamaindex:
-    top_k: 5
+    top_k: 30
     model_config_path: configs/model.yaml
 
     qdrant:
@@ -15,12 +15,18 @@ retrieval:
       prefer_grpc: false
 
   reranker:
-    active_backend: identity
-    top_k: 5
+    active_backend: cross_encoder
+    top_k: 10
 
-    # cross_encoder:
-    #   model_name: BAAI/bge-reranker-base
-    #   batch_size: 32
+    cross_encoder:
+      # BGE rerankers score query/passage pairs directly. The raw score is
+      # not bounded to [0, 1], so keep sigmoid disabled for rank ordering.
+      model_name: BAAI/bge-reranker-base
+      batch_size: 16
+      max_length: 512
+      device: cuda
+      local_files_only: false
+      use_sigmoid: false
 
   context_builder:
     max_chunks: 5

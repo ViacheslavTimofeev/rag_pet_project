@@ -8,6 +8,7 @@ eval:
     reviewed: true
 
   retrieval:
+    mode: pipeline
     k_values: [1, 3, 5, 10]
     primary_metrics:
       - recall@5

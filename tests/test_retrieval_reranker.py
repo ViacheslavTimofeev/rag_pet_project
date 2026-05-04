@@ -14,7 +14,10 @@ class RecordingCrossEncoder:
 
     def predict(self, pairs, **kwargs):
         self.calls.append({"pairs": pairs, "kwargs": kwargs})
-        return list(self._scores)
+        activation_fct = kwargs.get("activation_fn") or kwargs.get("activation_fct")
+        if activation_fct is None:
+            return list(self._scores)
+        return [activation_fct(score) for score in self._scores]
 
 
 def _chunk(*, chunk_id: str, text: str, score: float, rank: int) -> RetrievedChunk:
@@ -92,6 +95,35 @@ class CrossEncoderRerankerTests(unittest.TestCase):
         self.assertEqual([chunk.chunk_id for chunk in results], ["c2", "c3", "c1"])
         self.assertEqual([chunk.rank for chunk in results], [1, 2, 3])
         self.assertEqual([chunk.score for chunk in results], [0.95, 0.4, 0.1])
+        self.assertEqual(results[0].metadata["section"], "body")
+        self.assertEqual(results[0].metadata["retrieval_score"], 0.8)
+        self.assertEqual(results[0].metadata["reranker_score"], 0.95)
+        self.assertEqual(
+            results[0].metadata["reranker_model"],
+            "fake-cross-encoder",
+        )
+
+    def test_init_rejects_invalid_max_length(self) -> None:
+        with self.assertRaises(ValueError):
+            CrossEncoderReranker(
+                "fake-cross-encoder",
+                max_length=0,
+                model=object(),
+            )
+
+    def test_rerank_can_apply_sigmoid_to_scores(self) -> None:
+        backend = RecordingCrossEncoder([0.0])
+        reranker = CrossEncoderReranker(
+            "fake-cross-encoder",
+            use_sigmoid=True,
+            model=backend,
+        )
+        chunks = [_chunk(chunk_id="c1", text="alpha", score=0.9, rank=1)]
+
+        results = reranker.rerank("hello", chunks)
+
+        self.assertEqual(results[0].score, 0.5)
+        self.assertIn("activation_fn", backend.calls[0]["kwargs"])
 
     def test_rerank_respects_top_k_before_scoring(self) -> None:
         backend = RecordingCrossEncoder([0.2, 0.1])

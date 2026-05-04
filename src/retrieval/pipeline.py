@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .types import BuiltContext, ContextBuilder, Reranker, Retriever
+from .types import BuiltContext, ContextBuilder, Reranker, RetrievedChunk, Retriever
 
 
 class RetrievalPipeline:
@@ -23,10 +23,19 @@ class RetrievalPipeline:
         self._rerank_top_k = rerank_top_k
 
     def run(self, query: str) -> BuiltContext:
+        reranked_chunks = self.retrieve(query)
+        return self._context_builder.build(reranked_chunks)
+
+    def retrieve(self, query: str) -> list[RetrievedChunk]:
+        """Return reranked chunks before context assembly.
+
+        This keeps retrieval evaluation focused on ranking quality instead of
+        context-builder truncation or document deduplication policy.
+        """
+
         retrieved_chunks = self._retriever.retrieve(query)
-        reranked_chunks = self._reranker.rerank(
+        return self._reranker.rerank(
             query,
             retrieved_chunks,
             top_k=self._rerank_top_k,
         )
-        return self._context_builder.build(reranked_chunks)

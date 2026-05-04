@@ -162,7 +162,17 @@ def _build_reranker_from_config(config: Mapping[str, Any]) -> Reranker:
         return CrossEncoderReranker(
             _require_str(cross_encoder_config, "model_name"),
             batch_size=_get_int(cross_encoder_config, "batch_size", default=32),
-            device=require_cuda_device(),
+            max_length=_get_optional_positive_int(
+                cross_encoder_config,
+                "max_length",
+            ),
+            device=_get_reranker_device(cross_encoder_config),
+            local_files_only=_get_bool(
+                cross_encoder_config,
+                "local_files_only",
+                default=False,
+            ),
+            use_sigmoid=_get_bool(cross_encoder_config, "use_sigmoid", default=False),
         )
     raise ValueError(
         "Unsupported reranker backend. Expected one of: 'identity', "
@@ -196,6 +206,19 @@ def _build_llamaindex_embedding_model(model_config: Mapping[str, Any]) -> Any:
         embed_batch_size=_get_int(backend_config, "batch_size", default=32),
         normalize=_get_bool(backend_config, "normalize_embeddings", default=True),
         local_files_only=_get_bool(backend_config, "local_files_only", default=False),
+    )
+
+
+def _get_reranker_device(config: Mapping[str, Any]) -> str | None:
+    device = _get_non_empty_str(config, "device", default="cuda")
+    if device == "cuda":
+        return require_cuda_device()
+    if device in {"cpu", "mps"}:
+        return device
+    if device == "auto":
+        return None
+    raise ValueError(
+        "reranker.cross_encoder.device must be 'cuda', 'cpu', 'mps', or 'auto'."
     )
 
 

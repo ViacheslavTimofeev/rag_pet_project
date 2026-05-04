@@ -32,7 +32,7 @@ class RetrievedChunkRecord:
     rank: int
     score: float
     text: str
-    metadata: dict[str, str | int] = field(default_factory=dict)
+    metadata: dict[str, str | int | float | bool] = field(default_factory=dict)
 
     @classmethod
     def from_chunk(cls, chunk: RetrievedChunk) -> RetrievedChunkRecord:
