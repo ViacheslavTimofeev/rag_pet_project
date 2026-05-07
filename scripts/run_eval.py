@@ -56,6 +56,7 @@ def main() -> int:
 
 def run_retrieval_command(args: argparse.Namespace) -> int:
     config = load_eval_config(args.eval_config)
+    retrieval_config = load_yaml_config(args.retrieval_config, label="Retrieval")
     dataset_path = get_dataset_path(config)
     k_values = get_k_values(config)
 
@@ -71,6 +72,10 @@ def run_retrieval_command(args: argparse.Namespace) -> int:
             "eval_retrieval_mode": retrieval_mode,
             "eval_config_path": str(args.eval_config),
             "retrieval_config_path": str(args.retrieval_config),
+            "configs": {
+                "eval": config,
+                "retrieval": retrieval_config,
+            },
         },
     )
 
@@ -81,17 +86,21 @@ def run_retrieval_command(args: argparse.Namespace) -> int:
 
 
 def load_eval_config(path: str | Path) -> dict[str, Any]:
+    return load_yaml_config(path, label="Eval")
+
+
+def load_yaml_config(path: str | Path, *, label: str) -> dict[str, Any]:
     try:
         import yaml
     except ImportError as exc:
-        raise ImportError("PyYAML is required to load configs/eval.yaml.") from exc
+        raise ImportError(f"PyYAML is required to load {label.lower()} config.") from exc
 
     config_path = Path(path)
     with config_path.open("r", encoding="utf-8") as file:
         loaded = yaml.safe_load(file) or {}
 
     if not isinstance(loaded, dict):
-        raise ValueError("Eval config must be a mapping at the top level.")
+        raise ValueError(f"{label} config must be a mapping at the top level.")
     return loaded
 
 

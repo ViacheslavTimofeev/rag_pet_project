@@ -4,7 +4,7 @@ from typing import cast
 import unittest
 import uuid
 
-from src.ingest import CharacterTextChunker
+from src.ingest import CharacterTextChunker, MarkdownParentChildChunker
 from src.ingest.raw_creation import FastAPITutorialIngestor
 from src.ingest.types import RawDocument
 
@@ -104,6 +104,57 @@ class CharacterTextChunkerTests(unittest.TestCase):
                 document.text[char_start - 1].isalnum() and document.text[char_start].isalnum(),
                 msg=f"Chunk starts in the middle of a word: {chunk.text!r}",
             )
+
+
+class MarkdownParentChildChunkerTests(unittest.TestCase):
+    def test_chunks_markdown_sections_with_parent_metadata_and_symbols(self) -> None:
+        chunker = MarkdownParentChildChunker(
+            child_chunk_size=160,
+            child_chunk_overlap=20,
+        )
+        document = RawDocument(
+            document_id="body-md",
+            source_path=Path("docs/body.md"),
+            text=(
+                "# Body\n\n"
+                "Intro about request bodies.\n\n"
+                "## Request body + path parameters\n\n"
+                "Use `BaseModel` with `item_id` and `Item` in the path operation.\n\n"
+                "FastAPI validates the body and generates OpenAPI docs.\n\n"
+                "## Invalid data\n\n"
+                "Invalid request bodies return validation errors."
+            ),
+            metadata={
+                "dataset": "fastapi_tutorial",
+                "source": "body.md",
+                "title": "body",
+            },
+        )
+
+        chunks = chunker.chunk_single_document(document)
+
+        self.assertGreaterEqual(len(chunks), 3)
+        section_chunk = next(
+            chunk
+            for chunk in chunks
+            if "Request body + path parameters" in chunk.metadata["section_path"]
+        )
+        self.assertEqual(section_chunk.metadata["document_id"], "body-md")
+        self.assertIn("parent_id", section_chunk.metadata)
+        self.assertEqual(section_chunk.metadata["header_1"], "Body")
+        self.assertEqual(
+            section_chunk.metadata["header_2"],
+            "Request body + path parameters",
+        )
+        self.assertIn("Section: Body > Request body + path parameters", section_chunk.text)
+        self.assertIn("BaseModel", section_chunk.metadata["symbols"])
+        self.assertEqual(chunks[0].metadata["chunk_count"], len(chunks))
+        self.assertEqual(chunks[0].metadata["prev_chunk_id"], "")
+        self.assertEqual(chunks[-1].metadata["next_chunk_id"], "")
+
+    def test_rejects_invalid_child_overlap_configuration(self) -> None:
+        with self.assertRaises(ValueError):
+            MarkdownParentChildChunker(child_chunk_size=100, child_chunk_overlap=100)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from .pipeline import RetrievalPipeline
 from .reranker import CrossEncoderReranker, IdentityReranker
 from .retriever import LlamaIndexRetriever
 from .types import ContextBuilder, Reranker, Retriever
+import yaml
 
 DEFAULT_RETRIEVAL_CONFIG_PATH = Path("configs/retrieval.yaml")
 
@@ -20,12 +21,7 @@ def load_retrieval_config(
     config_path: str | Path = DEFAULT_RETRIEVAL_CONFIG_PATH,
 ) -> dict[str, Any]:
     """Load retrieval configuration from YAML."""
-
-    try:
-        import yaml
-    except ImportError as exc:
-        raise ImportError("PyYAML is required to load configs/retrieval.yaml.") from exc
-
+    
     path = Path(config_path)
     with path.open("r", encoding="utf-8") as config_file:
         loaded = yaml.safe_load(config_file) or {}

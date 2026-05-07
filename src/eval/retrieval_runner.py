@@ -4,12 +4,19 @@ import json
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Protocol
 from uuid import uuid4
 
-from src.retrieval.types import RetrievedChunk, Retriever
+from src.retrieval.types import RetrievedChunk
 
 from .retrieval_metrics import RetrievalMetricsSummary, evaluate_retrieval
+
+
+class RetrievalEvalTarget(Protocol):
+    """Structural retrieval contract required by eval runs."""
+
+    def retrieve(self, query: str) -> list[RetrievedChunk]:
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,11 +72,11 @@ class RetrievalEvalRunResult:
 
     run_id: str
     created_at: str
+    metadata: dict[str, Any]
     dataset_path: str | None
     k_values: tuple[int, ...]
     metrics: RetrievalMetricsSummary
     results: tuple[RetrievalEvalQueryResult, ...]
-    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -94,7 +101,7 @@ def load_retrieval_eval_dataset(path: str | Path) -> list[RetrievalEvalExample]:
 
 
 def run_retrieval_eval(
-    retriever: Retriever,
+    retriever: RetrievalEvalTarget,
     examples: list[RetrievalEvalExample] | tuple[RetrievalEvalExample, ...],
     *,
     k_values: list[int] | tuple[int, ...],
@@ -137,11 +144,11 @@ def run_retrieval_eval(
     return RetrievalEvalRunResult(
         run_id=run_id or f"retrieval-{uuid4().hex}",
         created_at=datetime.now(UTC).isoformat(),
+        metadata=dict(metadata or {}),
         dataset_path=str(dataset_path) if dataset_path is not None else None,
         k_values=metrics.k_values,
         metrics=metrics,
         results=tuple(captured_results),
-        metadata=dict(metadata or {}),
     )
 
 

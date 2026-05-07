@@ -34,6 +34,8 @@ class SentenceTransformerEmbedder(EmbeddingModel):
 
     @property
     def dimension(self) -> int | None:
+        if hasattr(self._model, "get_embedding_dimension"):
+            return self._model.get_embedding_dimension()
         return self._model.get_sentence_embedding_dimension()
 
     def embed_texts(self, texts: Sequence[str]) -> list[EmbeddingVector]:

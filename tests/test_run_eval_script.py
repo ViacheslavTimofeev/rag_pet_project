@@ -110,6 +110,11 @@ class RunEvalScriptTests(unittest.TestCase):
         self.assertEqual(saved["metrics"]["query_count"], 1)
         self.assertEqual(saved["metrics"]["recall_at_k"]["1"], 1.0)
         self.assertEqual(saved["metadata"]["eval_retrieval_mode"], "retriever")
+        self.assertEqual(
+            saved["metadata"]["configs"]["eval"]["eval"]["dataset"]["path"],
+            dataset_path.as_posix(),
+        )
+        self.assertIn("retrieval", saved["metadata"]["configs"]["retrieval"])
         self.assertEqual(saved["results"][0]["retrieved_chunks"][0]["chunk_id"], "c1")
 
     def test_retrieval_command_can_evaluate_pipeline_mode(self) -> None:

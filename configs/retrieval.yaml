@@ -1,35 +1,35 @@
 retrieval:
   pipeline:
-    enabled: true
-    run_reranker: true
-    run_context_builder: true
+    enabled: true # [true, false]
+    run_reranker: true # [true, false]
+    run_context_builder: true # [true, false]
 
   llamaindex:
-    top_k: 30
-    model_config_path: configs/model.yaml
+    top_k: 50 # [positive integer]
+    model_config_path: configs/model.yaml # [path string]
 
     qdrant:
-      collection_name: documents
-      url: http://localhost:6333
-      api_key_env: null
-      prefer_grpc: false
+      collection_name: documents_markdown # [non-empty string]
+      url: http://localhost:6333 # [URL string]
+      api_key_env: null # [environment variable name, null]
+      prefer_grpc: false # [true, false]
 
   reranker:
-    active_backend: cross_encoder
-    top_k: 10
+    active_backend: cross_encoder # [cross_encoder, identity]
+    top_k: 10 # [positive integer, null]
 
     cross_encoder:
       # BGE rerankers score query/passage pairs directly. The raw score is
       # not bounded to [0, 1], so keep sigmoid disabled for rank ordering.
-      model_name: BAAI/bge-reranker-base
-      batch_size: 16
-      max_length: 512
-      device: cuda
-      local_files_only: false
-      use_sigmoid: false
+      model_name: BAAI/bge-reranker-base # [non-empty string]
+      batch_size: 16 # [positive integer]
+      max_length: 512 # [positive integer, null]
+      device: cuda # [cuda, cpu, mps, auto]
+      local_files_only: false # [true, false]
+      use_sigmoid: false # [true, false]
 
   context_builder:
-    max_chunks: 5
-    max_chars: 4000
-    dedup_by_document: true
-    chunk_separator: "\n\n"
+    max_chunks: 5 # [positive integer, null]
+    max_chars: 4000 # [positive integer, null]
+    dedup_by_document: true # [true, false]
+    chunk_separator: "\n\n" # [non-empty string]

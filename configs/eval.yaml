@@ -3,7 +3,7 @@ eval:
     name: fastapi_tutorial_retrieval_gt
     path: data/eval/retrieval_gt.jsonl
     source_corpus: data/raw
-    chunk_source: data/processed/chunks.jsonl
+    chunk_source: data/processed/chunks_markdown.jsonl
     generated_by: ChatGPT 5.5
     reviewed: true
 
