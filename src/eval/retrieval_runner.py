@@ -88,7 +88,7 @@ def load_retrieval_eval_dataset(path: str | Path) -> list[RetrievalEvalExample]:
     dataset_path = Path(path)
     examples: list[RetrievalEvalExample] = []
 
-    with dataset_path.open("r", encoding="utf-8") as file:
+    with dataset_path.open("r", encoding="utf-8-sig") as file:
         for line_number, line in enumerate(file, start=1):
             if not line.strip():
                 continue
@@ -116,11 +116,19 @@ def run_retrieval_eval(
 
     captured_results: list[RetrievalEvalQueryResult] = []
     metric_rows: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {}
+    metric_target_level = _resolve_metric_target_level(examples)
 
     for example in examples:
         chunks = tuple(retriever.retrieve(example.question))
-        retrieved_ids = tuple(chunk.chunk_id for chunk in chunks)
-        metric_rows[example.id] = (example.relevant_chunk_ids, retrieved_ids)
+        relevant_ids = _relevant_ids_for_example(
+            example,
+            target_level=metric_target_level,
+        )
+        retrieved_ids = _retrieved_ids_for_chunks(
+            chunks,
+            target_level=metric_target_level,
+        )
+        metric_rows[example.id] = (relevant_ids, retrieved_ids)
         captured_results.append(
             RetrievalEvalQueryResult(
                 id=example.id,
@@ -141,10 +149,13 @@ def run_retrieval_eval(
         for result in captured_results
     ]
 
+    run_metadata = dict(metadata or {})
+    run_metadata.setdefault("metric_target_level", metric_target_level)
+
     return RetrievalEvalRunResult(
         run_id=run_id or f"retrieval-{uuid4().hex}",
         created_at=datetime.now(UTC).isoformat(),
-        metadata=dict(metadata or {}),
+        metadata=run_metadata,
         dataset_path=str(dataset_path) if dataset_path is not None else None,
         k_values=metrics.k_values,
         metrics=metrics,
@@ -190,15 +201,19 @@ def _example_from_mapping(
     *,
     line_number: int,
 ) -> RetrievalEvalExample:
+    relevant_chunk_ids = _get_str_tuple(row, "relevant_chunk_ids")
+    relevant_document_ids = _get_str_tuple(row, "relevant_document_ids")
+    if not relevant_chunk_ids and not relevant_document_ids:
+        raise ValueError(
+            f"Eval row {line_number} must contain relevant_chunk_ids or "
+            "relevant_document_ids."
+        )
+
     return RetrievalEvalExample(
         id=_require_str(row, "id", line_number=line_number),
         question=_require_str(row, "question", line_number=line_number),
-        relevant_chunk_ids=_require_str_tuple(
-            row,
-            "relevant_chunk_ids",
-            line_number=line_number,
-        ),
-        relevant_document_ids=_get_str_tuple(row, "relevant_document_ids"),
+        relevant_chunk_ids=relevant_chunk_ids,
+        relevant_document_ids=relevant_document_ids,
         reference_answer=_get_optional_str(row, "reference_answer"),
     )
 
@@ -224,22 +239,49 @@ def _get_optional_str(row: Mapping[str, Any], key: str) -> str | None:
     return value
 
 
-def _require_str_tuple(
-    row: Mapping[str, Any],
-    key: str,
-    *,
-    line_number: int,
-) -> tuple[str, ...]:
-    value = _get_str_tuple(row, key)
-    if not value:
-        raise ValueError(
-            f"Eval row {line_number} field {key!r} must contain at least one id."
-        )
-    return value
-
-
 def _get_str_tuple(row: Mapping[str, Any], key: str) -> tuple[str, ...]:
     value = row.get(key, [])
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
         raise ValueError(f"Field {key!r} must be a list of strings.")
     return tuple(value)
+
+
+def _resolve_metric_target_level(
+    examples: list[RetrievalEvalExample] | tuple[RetrievalEvalExample, ...],
+) -> str:
+    has_chunk_targets = any(example.relevant_chunk_ids for example in examples)
+    has_document_targets = any(example.relevant_document_ids for example in examples)
+
+    if has_chunk_targets:
+        if any(not example.relevant_chunk_ids for example in examples):
+            raise ValueError("All examples must contain relevant_chunk_ids.")
+        return "chunk_id"
+    if has_document_targets:
+        if any(not example.relevant_document_ids for example in examples):
+            raise ValueError("All examples must contain relevant_document_ids.")
+        return "document_id"
+    raise ValueError("examples must contain chunk or document relevance ids.")
+
+
+def _relevant_ids_for_example(
+    example: RetrievalEvalExample,
+    *,
+    target_level: str,
+) -> tuple[str, ...]:
+    if target_level == "chunk_id":
+        return example.relevant_chunk_ids
+    if target_level == "document_id":
+        return example.relevant_document_ids
+    raise ValueError(f"Unsupported metric target level: {target_level}")
+
+
+def _retrieved_ids_for_chunks(
+    chunks: tuple[RetrievedChunk, ...],
+    *,
+    target_level: str,
+) -> tuple[str, ...]:
+    if target_level == "chunk_id":
+        return tuple(chunk.chunk_id for chunk in chunks)
+    if target_level == "document_id":
+        return tuple(chunk.document_id for chunk in chunks)
+    raise ValueError(f"Unsupported metric target level: {target_level}")

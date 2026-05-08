@@ -34,7 +34,7 @@ class RunEvalScriptTests(unittest.TestCase):
                 (
                     "eval:\n"
                     "  dataset:\n"
-                    "    path: data/eval/retrieval_gt.jsonl\n"
+                    "    path: data/eval/retrieval_sources_gt.jsonl\n"
                     "  retrieval:\n"
                     "    k_values: [1, 5]\n"
                 ),
@@ -47,7 +47,7 @@ class RunEvalScriptTests(unittest.TestCase):
 
         self.assertEqual(
             run_eval.get_dataset_path(config),
-            Path("data/eval/retrieval_gt.jsonl"),
+            Path("data/eval/retrieval_sources_gt.jsonl"),
         )
         self.assertEqual(run_eval.get_k_values(config), [1, 5])
         self.assertEqual(run_eval.get_retrieval_mode(config), "retriever")

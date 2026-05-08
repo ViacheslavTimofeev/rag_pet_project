@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 import unittest
 from unittest.mock import patch
 from uuid import NAMESPACE_URL, uuid5
@@ -26,29 +27,40 @@ class FakeModels:
 
 
 class FakeClient:
-    def __init__(self, *, collection_exists: bool = False, points=None) -> None:
+    def __init__(
+        self,
+        *,
+        collection_exists: bool = False,
+        points: list[FakePoint] | None = None,
+    ) -> None:
         self._collection_exists = collection_exists
         self._points = points or []
-        self.created_collections = []
-        self.upserts = []
-        self.queries = []
+        self.created_collections: list[dict[str, Any]] = []
+        self.upserts: list[dict[str, Any]] = []
+        self.queries: list[dict[str, Any]] = []
 
     def collection_exists(self, *, collection_name: str) -> bool:
         return self._collection_exists
 
-    def create_collection(self, **kwargs) -> None:
+    def create_collection(self, **kwargs: Any) -> None:
         self.created_collections.append(kwargs)
 
-    def upsert(self, **kwargs) -> None:
+    def upsert(self, **kwargs: Any) -> None:
         self.upserts.append(kwargs)
 
-    def query_points(self, **kwargs):
+    def query_points(self, **kwargs: Any) -> object:
         self.queries.append(kwargs)
         return type("QueryResponse", (), {"points": self._points})()
 
 
 class FakePoint:
-    def __init__(self, *, point_id: str, score: float, payload: dict) -> None:
+    def __init__(
+        self,
+        *,
+        point_id: str,
+        score: float,
+        payload: dict[str, Any],
+    ) -> None:
         self.id = point_id
         self.score = score
         self.payload = payload

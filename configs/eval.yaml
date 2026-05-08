@@ -1,11 +1,11 @@
 eval:
   dataset:
-    name: fastapi_tutorial_retrieval_gt
-    path: data/eval/retrieval_gt.jsonl
+    name: fastapi_tutorial_retrieval_sources_gt
+    path: data/eval/retrieval_sources_gt.jsonl
     source_corpus: data/raw
-    chunk_source: data/processed/chunks_markdown.jsonl
-    generated_by: ChatGPT 5.5
-    reviewed: true
+    chunk_source: data/processed/chunks_base.jsonl
+    generated_by: scripts.run_eval
+    reviewed: false
 
   retrieval:
     mode: pipeline

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import shutil
+from typing import Any
 import unittest
 import uuid
 from unittest.mock import patch
@@ -141,7 +142,7 @@ class RetrievalFactoryTests(unittest.TestCase):
     def test_build_retriever_loads_config_before_building(self) -> None:
         with patch("src.retrieval.factory.load_retrieval_config") as load_config:
             with patch("src.retrieval.factory.build_retriever_from_config") as build_from_config:
-                config = {"retrieval": {"llamaindex": {}}}
+                config: dict[str, Any] = {"retrieval": {"llamaindex": {}}}
                 backend = FakeLlamaIndexBackend()
                 load_config.return_value = config
                 build_from_config.return_value = object()
@@ -271,7 +272,12 @@ class RetrievalFactoryTests(unittest.TestCase):
             with patch(
                 "src.retrieval.factory.build_retrieval_pipeline_from_config"
             ) as build_from_config:
-                config = {"retrieval": {"llamaindex": {}, "reranker": {"active_backend": "identity"}}}
+                config: dict[str, Any] = {
+                    "retrieval": {
+                        "llamaindex": {},
+                        "reranker": {"active_backend": "identity"},
+                    }
+                }
                 backend = FakeLlamaIndexBackend()
                 reranker = FakeReranker()
                 context_builder = FakeContextBuilder()

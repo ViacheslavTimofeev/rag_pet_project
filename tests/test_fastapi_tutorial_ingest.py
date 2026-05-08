@@ -137,7 +137,8 @@ class MarkdownParentChildChunkerTests(unittest.TestCase):
         section_chunk = next(
             chunk
             for chunk in chunks
-            if "Request body + path parameters" in chunk.metadata["section_path"]
+            if "Request body + path parameters"
+            in cast(str, chunk.metadata["section_path"])
         )
         self.assertEqual(section_chunk.metadata["document_id"], "body-md")
         self.assertIn("parent_id", section_chunk.metadata)
@@ -147,7 +148,7 @@ class MarkdownParentChildChunkerTests(unittest.TestCase):
             "Request body + path parameters",
         )
         self.assertIn("Section: Body > Request body + path parameters", section_chunk.text)
-        self.assertIn("BaseModel", section_chunk.metadata["symbols"])
+        self.assertIn("BaseModel", cast(str, section_chunk.metadata["symbols"]))
         self.assertEqual(chunks[0].metadata["chunk_count"], len(chunks))
         self.assertEqual(chunks[0].metadata["prev_chunk_id"], "")
         self.assertEqual(chunks[-1].metadata["next_chunk_id"], "")

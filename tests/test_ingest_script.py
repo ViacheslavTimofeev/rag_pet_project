@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shutil
+from typing import Any, cast
 import unittest
 import uuid
 
@@ -39,7 +40,8 @@ class IngestScriptTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertGreaterEqual(len(chunks), 1)
-        self.assertIn("char_start", chunks[0]["metadata"])
+        metadata = cast(dict[str, Any], chunks[0]["metadata"])
+        self.assertIn("char_start", metadata)
 
     def test_markdown_parent_child_strategy_writes_parent_metadata(self) -> None:
         tmp_root = Path(".tmp_test") / f"ingest-script-markdown-{uuid.uuid4().hex}"
@@ -77,13 +79,13 @@ class IngestScriptTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertGreaterEqual(len(chunks), 1)
-        metadata = chunks[0]["metadata"]
+        metadata = cast(dict[str, Any], chunks[0]["metadata"])
         self.assertIn("parent_id", metadata)
         self.assertIn("section_path", metadata)
-        self.assertIn("Section:", chunks[0]["text"])
+        self.assertIn("Section:", cast(str, chunks[0]["text"]))
 
 
-def _read_jsonl(path: Path) -> list[dict[str, object]]:
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     return [
         json.loads(line)
         for line in path.read_text(encoding="utf-8").splitlines()

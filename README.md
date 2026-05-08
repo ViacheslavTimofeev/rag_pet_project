@@ -160,8 +160,8 @@ Run the deterministic retrieval benchmark:
 conda run -n rag python -m scripts.run_eval retrieval
 ```
 
-The runner reads `data/eval/retrieval_gt.jsonl`, retrieves top-k chunks for each
-question, computes retrieval metrics, and saves a JSON artifact under
+The runner reads `data/eval/retrieval_sources_gt.jsonl`, retrieves top-k chunks
+for each question, computes source-level retrieval metrics, and saves a JSON artifact under
 `data/eval/runs/`.
 
 Current baseline artifact:
@@ -238,7 +238,7 @@ http://127.0.0.1:7860
 
 The repository currently includes retrieval-level evaluation:
 
-- frozen ground truth: `data/eval/retrieval_gt.jsonl`;
+- frozen source-level ground truth: `data/eval/retrieval_sources_gt.jsonl`;
 - dataset notes: `data/eval/README.md`;
 - metrics implementation: `src/eval/retrieval_metrics.py`;
 - runner: `src/eval/retrieval_runner.py`;

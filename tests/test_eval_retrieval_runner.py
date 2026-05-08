@@ -47,7 +47,7 @@ class RetrievalRunnerTests(unittest.TestCase):
             shutil.rmtree(self._temp_root)
 
     def test_load_retrieval_eval_dataset_reads_jsonl_examples(self) -> None:
-        path = self._temp_root / "retrieval_gt.jsonl"
+        path = self._temp_root / "retrieval_sources_gt.jsonl"
         path.write_text(
             "\n".join(
                 [
@@ -80,6 +80,25 @@ class RetrievalRunnerTests(unittest.TestCase):
                 )
             ],
         )
+
+    def test_load_retrieval_eval_dataset_accepts_document_only_examples(self) -> None:
+        path = self._temp_root / "retrieval_sources_gt.jsonl"
+        path.write_text(
+            json.dumps(
+                {
+                    "id": "q1",
+                    "question": "What is alpha?",
+                    "relevant_document_ids": ["d1"],
+                    "reference_answer": "Alpha is first.",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        examples = load_retrieval_eval_dataset(path)
+
+        self.assertEqual(examples[0].relevant_chunk_ids, ())
+        self.assertEqual(examples[0].relevant_document_ids, ("d1",))
 
     def test_run_retrieval_eval_captures_outputs_and_metrics(self) -> None:
         examples = [
@@ -117,7 +136,10 @@ class RetrievalRunnerTests(unittest.TestCase):
         self.assertEqual(retriever.calls, ["question one", "question two"])
         self.assertEqual(result.run_id, "test-run")
         self.assertEqual(result.dataset_path, "data/eval/retrieval_gt.jsonl")
-        self.assertEqual(result.metadata, {"retriever": "fake"})
+        self.assertEqual(
+            result.metadata,
+            {"retriever": "fake", "metric_target_level": "chunk_id"},
+        )
         self.assertEqual(result.metrics.query_count, 2)
         self.assertEqual(result.metrics.recall_at_k[1], 0.0)
         self.assertEqual(result.metrics.recall_at_k[2], 0.5)
@@ -128,6 +150,30 @@ class RetrievalRunnerTests(unittest.TestCase):
             ["c1", "c2"],
         )
         self.assertEqual(result.results[0].metrics["reciprocal_rank_at_k"][2], 0.5)
+
+    def test_run_retrieval_eval_can_score_document_level_targets(self) -> None:
+        examples = [
+            RetrievalEvalExample(
+                id="q1",
+                question="question one",
+                relevant_chunk_ids=(),
+                relevant_document_ids=("doc-c2",),
+            )
+        ]
+        retriever = FakeRetriever(
+            {"question one": [_chunk("c1", rank=1), _chunk("c2", rank=2)]}
+        )
+
+        result = run_retrieval_eval(
+            retriever,
+            examples,
+            k_values=[1, 2],
+        )
+
+        self.assertEqual(result.metadata["metric_target_level"], "document_id")
+        self.assertEqual(result.metrics.recall_at_k[1], 0.0)
+        self.assertEqual(result.metrics.recall_at_k[2], 1.0)
+        self.assertEqual(result.metrics.hit_rate_at_k[2], 1.0)
 
     def test_save_retrieval_eval_run_writes_json_artifact(self) -> None:
         result = run_retrieval_eval(
@@ -162,6 +208,7 @@ class RetrievalRunnerTests(unittest.TestCase):
                     "id": "q1",
                     "question": "question",
                     "relevant_chunk_ids": [],
+                    "relevant_document_ids": [],
                 }
             ),
             encoding="utf-8",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import Any, cast
 
 from src.llm.postprocess import (
     collect_warnings,
@@ -64,7 +65,8 @@ class LLMPostprocessTests(unittest.TestCase):
         self.assertEqual(payload.warnings, ["short_answer"])
         self.assertEqual(as_dict["metadata"], {"trace_id": "123"})
         self.assertEqual(as_dict["usage"], {"input_tokens": 8, "output_tokens": 3, "total_tokens": 11})
-        self.assertEqual(as_dict["sources"][0]["chunk_id"], "c1")
+        sources = cast(list[dict[str, Any]], as_dict["sources"])
+        self.assertEqual(sources[0]["chunk_id"], "c1")
 
     def test_collect_warnings_rejects_invalid_threshold(self) -> None:
         with self.assertRaises(ValueError):
