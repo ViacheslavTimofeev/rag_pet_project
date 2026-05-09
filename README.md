@@ -106,6 +106,8 @@ Default runtime assumptions:
 
 ## CLI Workflow
 
+For a compact terminal command reference, see [COMMANDS.md](COMMANDS.md).
+
 Run Python commands through the project Conda environment:
 
 ```powershell
