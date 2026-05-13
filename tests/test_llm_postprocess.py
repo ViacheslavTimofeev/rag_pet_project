@@ -68,6 +68,16 @@ class LLMPostprocessTests(unittest.TestCase):
         sources = cast(list[dict[str, Any]], as_dict["sources"])
         self.assertEqual(sources[0]["chunk_id"], "c1")
 
+    def test_postprocess_response_copies_llm_timing_from_raw_metadata(self) -> None:
+        payload = postprocess_response(
+            LLMResponse(text="A long enough answer.", raw={"llm_ms": 12.345}),
+            context_text="context",
+            metadata={"trace_id": "123"},
+        )
+
+        self.assertEqual(payload.metadata["trace_id"], "123")
+        self.assertEqual(payload.metadata["llm_ms"], 12.345)
+
     def test_collect_warnings_rejects_invalid_threshold(self) -> None:
         with self.assertRaises(ValueError):
             collect_warnings(

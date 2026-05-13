@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from time import perf_counter
 
 from src.llm.postprocess import PostprocessedResponse, postprocess_response
 from src.llm.service import LLMService
@@ -33,16 +34,19 @@ class AnswerGenerationPipeline:
     ) -> PostprocessedResponse:
         """Generate a grounded answer and attach context-derived source metadata."""
 
+        started_at = perf_counter()
         response = self._service.generate(
             query,
             built_context,
             params=params,
             metadata=metadata,
         )
-        return postprocess_response(
+        result = postprocess_response(
             response,
             sources=built_context.sources,
             context_text=built_context.text,
             metadata=metadata,
             min_answer_chars=self._min_answer_chars,
         )
+        result.metadata["generation_ms"] = round((perf_counter() - started_at) * 1000, 3)
+        return result

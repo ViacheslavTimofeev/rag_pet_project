@@ -9,7 +9,7 @@ retrieval:
     model_config_path: configs/model.yaml # [path string]
 
     qdrant:
-      collection_name: documents # [non-empty string]
+      collection_name: documents_markdown # [non-empty string]
       url: http://localhost:6333 # [URL string]
       api_key_env: null # [environment variable name, null]
       prefer_grpc: false # [true, false]

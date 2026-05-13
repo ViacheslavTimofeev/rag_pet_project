@@ -114,6 +114,18 @@ def postprocess_response(
         finish_reason=response.finish_reason,
         usage=response.usage,
         warnings=warnings,
-        metadata=dict(metadata or {}),
+        metadata=_merge_metadata(metadata, response.raw),
         raw=response.raw,
     )
+
+
+def _merge_metadata(
+    metadata: Mapping[str, str | int | float | bool] | None,
+    raw: Any | None,
+) -> dict[str, str | int | float | bool]:
+    merged = dict(metadata or {})
+    if isinstance(raw, dict):
+        llm_ms = raw.get("llm_ms")
+        if isinstance(llm_ms, int | float):
+            merged["llm_ms"] = float(llm_ms)
+    return merged

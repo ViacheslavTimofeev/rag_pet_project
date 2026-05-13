@@ -204,18 +204,20 @@ conda run -n rag python -m compileall scripts/build_markdown_gt.py
 
 ## vLLM Local OpenAI-Compatible Server
 
-Start a small vLLM smoke-test model:
+Start the local Qwen3 14B GGUF model with vLLM:
 
 ```powershell
 docker run --rm --gpus all `
   -v ${env:USERPROFILE}\.cache\huggingface:/root/.cache/huggingface `
+  -v ${PWD}\models:/models:ro `
   -p 8000:8000 `
   --ipc=host `
   vllm/vllm-openai:latest `
-  --model Qwen/Qwen2.5-1.5B-Instruct `
-  --dtype float16 `
-  --max-model-len 2048 `
-  --gpu-memory-utilization 0.70 `
+  --model /models/Qwen3-14B-Q4_K_M.gguf `
+  --tokenizer Qwen/Qwen3-14B `
+  --served-model-name Qwen3-14B-Q4_K_M `
+  --max-model-len 8192 `
+  --gpu-memory-utilization 0.90 `
   --tensor-parallel-size 1 `
   --api-key local-vllm
 ```
@@ -223,15 +225,17 @@ docker run --rm --gpus all `
 Start the same vLLM server as a named container:
 
 ```powershell
-docker run --name vllm-qwen-test --gpus all `
+docker run --name vllm-qwen3-14b --gpus all `
   -v ${env:USERPROFILE}\.cache\huggingface:/root/.cache/huggingface `
+  -v ${PWD}\models:/models:ro `
   -p 8000:8000 `
   --ipc=host `
   vllm/vllm-openai:latest `
-  --model Qwen/Qwen2.5-1.5B-Instruct `
-  --dtype float16 `
-  --max-model-len 2048 `
-  --gpu-memory-utilization 0.70 `
+  --model /models/Qwen3-14B-Q4_K_M.gguf `
+  --tokenizer Qwen/Qwen3-14B `
+  --served-model-name Qwen3-14B-Q4_K_M `
+  --max-model-len 8192 `
+  --gpu-memory-utilization 0.90 `
   --tensor-parallel-size 1 `
   --api-key local-vllm
 ```
@@ -239,10 +243,10 @@ docker run --name vllm-qwen-test --gpus all `
 Start, stop, inspect, and remove the named vLLM container:
 
 ```powershell
-docker start vllm-qwen-test
-docker stop vllm-qwen-test
-docker logs vllm-qwen-test --tail 100
-docker rm vllm-qwen-test
+docker start vllm-qwen3-14b
+docker stop vllm-qwen3-14b
+docker logs vllm-qwen3-14b --tail 100
+docker rm vllm-qwen3-14b
 ```
 
 Check that the vLLM OpenAI-compatible models endpoint is alive:
@@ -266,7 +270,7 @@ Test chat completion:
 curl.exe http://localhost:8000/v1/chat/completions `
   -H "Authorization: Bearer local-vllm" `
   -H "Content-Type: application/json" `
-  -d "{\"model\":\"Qwen/Qwen2.5-1.5B-Instruct\",\"messages\":[{\"role\":\"user\",\"content\":\"Answer in one sentence: what is FastAPI?\"}],\"temperature\":0,\"max_tokens\":80}"
+  -d "{\"model\":\"Qwen3-14B-Q4_K_M\",\"messages\":[{\"role\":\"user\",\"content\":\"Answer in one sentence: what is FastAPI?\"}],\"temperature\":0,\"max_tokens\":80}"
 ```
 
 Optional Hugging Face token for higher rate limits:
@@ -275,13 +279,15 @@ Optional Hugging Face token for higher rate limits:
 docker run --rm --gpus all `
   -e HF_TOKEN=$env:HF_TOKEN `
   -v ${env:USERPROFILE}\.cache\huggingface:/root/.cache/huggingface `
+  -v ${PWD}\models:/models:ro `
   -p 8000:8000 `
   --ipc=host `
   vllm/vllm-openai:latest `
-  --model Qwen/Qwen2.5-1.5B-Instruct `
-  --dtype float16 `
-  --max-model-len 2048 `
-  --gpu-memory-utilization 0.70 `
+  --model /models/Qwen3-14B-Q4_K_M.gguf `
+  --tokenizer Qwen/Qwen3-14B `
+  --served-model-name Qwen3-14B-Q4_K_M `
+  --max-model-len 8192 `
+  --gpu-memory-utilization 0.90 `
   --tensor-parallel-size 1 `
   --api-key local-vllm
 ```

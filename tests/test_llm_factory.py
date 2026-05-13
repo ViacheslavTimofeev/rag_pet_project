@@ -44,6 +44,41 @@ class LLMFactoryTests(unittest.TestCase):
         )
         self.assertIs(result, backend_cls.return_value)
 
+    def test_build_llm_backend_from_config_builds_vllm_backend(self) -> None:
+        config = {
+            "llm": {
+                "active_backend": "vllm",
+                "vllm": {
+                    "base_url": "http://127.0.0.1:8000/v1",
+                    "model": "Qwen3-14B-Q4_K_M",
+                    "api_key": "local-vllm",
+                    "api_key_env": None,
+                    "timeout_seconds": 90,
+                    "temperature": 0.1,
+                    "max_tokens": 1024,
+                    "top_p": 0.9,
+                    "stop": ["</s>"],
+                },
+            }
+        }
+
+        with patch("src.llm.factory.VllmBackend") as backend_cls:
+            backend_cls.return_value = object()
+            result = build_llm_backend_from_config(config)
+
+        backend_cls.assert_called_once_with(
+            base_url="http://127.0.0.1:8000/v1",
+            model="Qwen3-14B-Q4_K_M",
+            api_key="local-vllm",
+            api_key_env=None,
+            timeout_seconds=90.0,
+            temperature=0.1,
+            max_tokens=1024,
+            top_p=0.9,
+            stop=["</s>"],
+        )
+        self.assertIs(result, backend_cls.return_value)
+
     def test_build_llm_backend_loads_config_before_building(self) -> None:
         config = {"llm": {"active_backend": "llamacpp", "llamacpp": {"model_path": "m.gguf"}}}
 

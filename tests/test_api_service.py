@@ -64,7 +64,9 @@ class RagAskServiceTests(unittest.TestCase):
         )
 
         self.assertEqual(response.answer, "answer")
-        self.assertEqual(response.metadata, {"trace_id": "abc"})
+        self.assertEqual(response.metadata["trace_id"], "abc")
+        self.assertIsInstance(response.metadata["retrieval_ms"], float)
+        self.assertIsInstance(response.metadata["total_ms"], float)
         self.assertEqual(retrieval.queries, ["What is FastAPI?"])
         self.assertEqual(len(generation.calls), 1)
         call = generation.calls[0]

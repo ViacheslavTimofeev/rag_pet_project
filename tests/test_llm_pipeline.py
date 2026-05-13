@@ -92,7 +92,9 @@ class AnswerGenerationPipelineTests(unittest.TestCase):
         self.assertEqual(result.sources, [source])
         self.assertEqual(result.model, "fake-model")
         self.assertEqual(result.usage, response.usage)
-        self.assertEqual(result.metadata, metadata)
+        self.assertEqual(result.metadata["trace_id"], "abc")
+        self.assertIsInstance(result.metadata["llm_ms"], float)
+        self.assertIsInstance(result.metadata["generation_ms"], float)
         self.assertEqual(result.warnings, [])
         self.assertEqual(prompt_builder.calls, [
             {

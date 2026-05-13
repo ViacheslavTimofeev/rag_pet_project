@@ -14,7 +14,20 @@ embedding:
   #   api_key_env: OPENAI_API_KEY
 
 llm:
-  active_backend: llamacpp
+  active_backend: vllm
+
+  vllm:
+    # Local vLLM OpenAI-compatible server started from COMMANDS.md.
+    # The served model name is set by vLLM's --served-model-name argument.
+    base_url: http://127.0.0.1:8000/v1
+    model: Qwen3-14B-Q4_K_M
+    api_key: local-vllm
+    api_key_env: null
+    timeout_seconds: 120
+    temperature: 0.0
+    max_tokens: 1024
+    top_p: 0.9
+    stop: []
 
   llamacpp:
     # Baseline local model: Qwen3-14B GGUF file path.

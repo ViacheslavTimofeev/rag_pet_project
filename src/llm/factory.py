@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from src.embeddings.factory import load_model_config
-from src.llm.backends import LlamaCppBackend
+from src.llm.backends import LlamaCppBackend, VllmBackend
 from src.llm.types import LLMBackend
 
 DEFAULT_MODEL_CONFIG_PATH = Path("configs/model.yaml")
@@ -41,6 +41,27 @@ def build_llm_backend_from_config(config: Mapping[str, Any]) -> LLMBackend:
             seed=_get_optional_int(backend_config, "seed"),
             chat_format=_get_optional_str(backend_config, "chat_format"),
             verbose=_get_bool(backend_config, "verbose", default=False),
+        )
+
+    if active_backend == "vllm":
+        backend_config = llm_config.get("vllm")
+        if not isinstance(backend_config, Mapping):
+            raise ValueError(
+                "Model config must contain an 'llm.vllm' mapping when that "
+                "backend is active."
+            )
+        return VllmBackend(
+            base_url=_require_str(backend_config, "base_url"),
+            model=_require_str(backend_config, "model"),
+            api_key=_get_optional_str(backend_config, "api_key"),
+            api_key_env=_get_optional_str(backend_config, "api_key_env"),
+            timeout_seconds=_get_float(
+                backend_config, "timeout_seconds", default=120.0
+            ),
+            temperature=_get_float(backend_config, "temperature", default=0.0),
+            max_tokens=_get_int(backend_config, "max_tokens", default=512),
+            top_p=_get_float(backend_config, "top_p", default=1.0),
+            stop=_get_optional_str_list(backend_config, "stop"),
         )
 
     raise ValueError(f"Unsupported llm backend: {active_backend!r}")

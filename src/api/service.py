@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from time import perf_counter
+
 from src.api.schemas import AskRequest, GenerationParamsRequest
 from src.llm.pipeline import AnswerGenerationPipeline
 from src.llm.postprocess import PostprocessedResponse
@@ -24,13 +26,19 @@ class RagAskService:
         if not question:
             raise ValueError("question must be a non-empty string.")
 
+        total_started_at = perf_counter()
+        retrieval_started_at = perf_counter()
         built_context = self._retrieval_pipeline.run(question)
-        return self._generation_pipeline.run(
+        retrieval_ms = round((perf_counter() - retrieval_started_at) * 1000, 3)
+        result = self._generation_pipeline.run(
             question,
             built_context,
             params=_build_generation_params(request.generation),
             metadata=request.metadata,
         )
+        result.metadata["retrieval_ms"] = retrieval_ms
+        result.metadata["total_ms"] = round((perf_counter() - total_started_at) * 1000, 3)
+        return result
 
 
 def _build_generation_params(

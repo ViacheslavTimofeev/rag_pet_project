@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from time import perf_counter
 from typing import Protocol
 
 from src.llm.prompt_builder import GroundedPromptBuilder
@@ -47,4 +48,11 @@ class LLMService:
             params=params,
             metadata=metadata,
         )
-        return self._backend.generate(request)
+        started_at = perf_counter()
+        response = self._backend.generate(request)
+        elapsed_ms = round((perf_counter() - started_at) * 1000, 3)
+        response_metadata = dict(response.raw) if isinstance(response.raw, dict) else {}
+        response_metadata["llm_ms"] = elapsed_ms
+        if response.raw is None or isinstance(response.raw, dict):
+            response.raw = response_metadata
+        return response

@@ -5,7 +5,7 @@ api:
 
   server:
     host: 127.0.0.1
-    port: 8000
+    port: 8001
     reload: false
     log_level: info
     workers: 1
@@ -37,4 +37,4 @@ api:
     port: 7860
     share: false
     inbrowser: true
-    api_base_url: http://127.0.0.1:8000
+    api_base_url: http://127.0.0.1:8001
