@@ -3,7 +3,7 @@ eval:
     name: fastapi_tutorial_retrieval_sources_gt
     path: data/eval/retrieval_sources_gt.jsonl
     source_corpus: data/raw
-    chunk_source: data/processed/chunks_base.jsonl
+    chunk_source: data/processed/chunks_markdown.jsonl
     generated_by: scripts.run_eval
     reviewed: false
 
@@ -20,3 +20,9 @@ eval:
   ragas:
     enabled: true
     reference_field: reference_answer
+    output_path: data/eval/ragas_synthetic.jsonl
+    testset_size: 5
+    max_workers: 1
+    timeout_seconds: 180
+    max_tokens: 2048
+    max_doc_chars: 12000

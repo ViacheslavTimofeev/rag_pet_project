@@ -150,6 +150,16 @@ Chunk-level markdown eval uses `data/eval/retrieval_markdown_gt.jsonl`.
 
 Switch the active dataset in `configs/eval.yaml` before running eval.
 
+Build a small synthetic Ragas dataset from indexed markdown chunks:
+
+```powershell
+conda run -n rag python -m scripts.build_ragas_dataset `
+  --testset-size 5 `
+  --max-workers 1 `
+  --max-tokens 2048 `
+  --max-doc-chars 12000
+```
+
 ## API And UI
 
 Start the API server, and the UI too if enabled in `configs/api.yaml`:
@@ -204,18 +214,15 @@ conda run -n rag python -m compileall scripts/build_markdown_gt.py
 
 ## vLLM Local OpenAI-Compatible Server
 
-Start the local Qwen3 14B GGUF model with vLLM:
+Start the Qwen3 14B AWQ model with vLLM:
 
 ```powershell
 docker run --rm --gpus all `
   -v ${env:USERPROFILE}\.cache\huggingface:/root/.cache/huggingface `
-  -v ${PWD}\models:/models:ro `
   -p 8000:8000 `
   --ipc=host `
   vllm/vllm-openai:latest `
-  --model /models/Qwen3-14B-Q4_K_M.gguf `
-  --tokenizer Qwen/Qwen3-14B `
-  --served-model-name Qwen3-14B-Q4_K_M `
+  --model Qwen/Qwen3-14B-AWQ `
   --max-model-len 8192 `
   --gpu-memory-utilization 0.90 `
   --tensor-parallel-size 1 `
@@ -225,15 +232,12 @@ docker run --rm --gpus all `
 Start the same vLLM server as a named container:
 
 ```powershell
-docker run --name vllm-qwen3-14b --gpus all `
+docker run --name vllm-qwen3-14b-awq --gpus all `
   -v ${env:USERPROFILE}\.cache\huggingface:/root/.cache/huggingface `
-  -v ${PWD}\models:/models:ro `
   -p 8000:8000 `
   --ipc=host `
   vllm/vllm-openai:latest `
-  --model /models/Qwen3-14B-Q4_K_M.gguf `
-  --tokenizer Qwen/Qwen3-14B `
-  --served-model-name Qwen3-14B-Q4_K_M `
+  --model Qwen/Qwen3-14B-AWQ `
   --max-model-len 8192 `
   --gpu-memory-utilization 0.90 `
   --tensor-parallel-size 1 `
@@ -243,10 +247,10 @@ docker run --name vllm-qwen3-14b --gpus all `
 Start, stop, inspect, and remove the named vLLM container:
 
 ```powershell
-docker start vllm-qwen3-14b
-docker stop vllm-qwen3-14b
-docker logs vllm-qwen3-14b --tail 100
-docker rm vllm-qwen3-14b
+docker start vllm-qwen3-14b-awq
+docker stop vllm-qwen3-14b-awq
+docker logs vllm-qwen3-14b-awq --tail 100
+docker rm vllm-qwen3-14b-awq
 ```
 
 Check that the vLLM OpenAI-compatible models endpoint is alive:
@@ -270,7 +274,7 @@ Test chat completion:
 curl.exe http://localhost:8000/v1/chat/completions `
   -H "Authorization: Bearer local-vllm" `
   -H "Content-Type: application/json" `
-  -d "{\"model\":\"Qwen3-14B-Q4_K_M\",\"messages\":[{\"role\":\"user\",\"content\":\"Answer in one sentence: what is FastAPI?\"}],\"temperature\":0,\"max_tokens\":80}"
+  -d "{\"model\":\"Qwen/Qwen3-14B-AWQ\",\"messages\":[{\"role\":\"user\",\"content\":\"Answer in one sentence: what is FastAPI?\"}],\"temperature\":0,\"max_tokens\":80}"
 ```
 
 Optional Hugging Face token for higher rate limits:
@@ -279,13 +283,10 @@ Optional Hugging Face token for higher rate limits:
 docker run --rm --gpus all `
   -e HF_TOKEN=$env:HF_TOKEN `
   -v ${env:USERPROFILE}\.cache\huggingface:/root/.cache/huggingface `
-  -v ${PWD}\models:/models:ro `
   -p 8000:8000 `
   --ipc=host `
   vllm/vllm-openai:latest `
-  --model /models/Qwen3-14B-Q4_K_M.gguf `
-  --tokenizer Qwen/Qwen3-14B `
-  --served-model-name Qwen3-14B-Q4_K_M `
+  --model Qwen/Qwen3-14B-AWQ `
   --max-model-len 8192 `
   --gpu-memory-utilization 0.90 `
   --tensor-parallel-size 1 `

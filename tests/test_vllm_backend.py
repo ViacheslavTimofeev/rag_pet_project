@@ -20,7 +20,7 @@ class VllmBackendTests(unittest.TestCase):
             return httpx.Response(
                 200,
                 json={
-                    "model": "Qwen3-14B-Q4_K_M",
+                    "model": "Qwen/Qwen3-14B-AWQ",
                     "choices": [
                         {
                             "message": {"role": "assistant", "content": "Grounded answer."},
@@ -38,7 +38,7 @@ class VllmBackendTests(unittest.TestCase):
         client = httpx.Client(transport=httpx.MockTransport(handler))
         backend = VllmBackend(
             base_url="http://localhost:8000/v1/",
-            model="Qwen3-14B-Q4_K_M",
+            model="Qwen/Qwen3-14B-AWQ",
             api_key="local-vllm",
             max_tokens=128,
             top_p=0.9,
@@ -55,7 +55,7 @@ class VllmBackendTests(unittest.TestCase):
         )
 
         self.assertEqual(response.text, "Grounded answer.")
-        self.assertEqual(response.model, "Qwen3-14B-Q4_K_M")
+        self.assertEqual(response.model, "Qwen/Qwen3-14B-AWQ")
         self.assertEqual(response.finish_reason, "stop")
         self.assertIsNotNone(response.usage)
         assert response.usage is not None
@@ -71,7 +71,7 @@ class VllmBackendTests(unittest.TestCase):
         payload = captured["payload"]
         self.assertIsInstance(payload, dict)
         assert isinstance(payload, dict)
-        self.assertEqual(payload["model"], "Qwen3-14B-Q4_K_M")
+        self.assertEqual(payload["model"], "Qwen/Qwen3-14B-AWQ")
         self.assertEqual(payload["temperature"], 0.1)
         self.assertEqual(payload["max_tokens"], 128)
         self.assertEqual(payload["top_p"], 0.9)
@@ -101,7 +101,7 @@ class VllmBackendTests(unittest.TestCase):
         )
         backend = VllmBackend(
             base_url="http://localhost:8000/v1",
-            model="Qwen3-14B-Q4_K_M",
+            model="Qwen/Qwen3-14B-AWQ",
             client=client,
         )
 
@@ -111,7 +111,7 @@ class VllmBackendTests(unittest.TestCase):
     def test_generate_rejects_streaming_until_supported(self) -> None:
         backend = VllmBackend(
             base_url="http://localhost:8000/v1",
-            model="Qwen3-14B-Q4_K_M",
+            model="Qwen/Qwen3-14B-AWQ",
             client=httpx.Client(transport=httpx.MockTransport(lambda request: None)),
         )
 

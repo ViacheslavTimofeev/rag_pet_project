@@ -50,7 +50,7 @@ class LLMFactoryTests(unittest.TestCase):
                 "active_backend": "vllm",
                 "vllm": {
                     "base_url": "http://127.0.0.1:8000/v1",
-                    "model": "Qwen3-14B-Q4_K_M",
+                    "model": "Qwen/Qwen3-14B-AWQ",
                     "api_key": "local-vllm",
                     "api_key_env": None,
                     "timeout_seconds": 90,
@@ -68,7 +68,7 @@ class LLMFactoryTests(unittest.TestCase):
 
         backend_cls.assert_called_once_with(
             base_url="http://127.0.0.1:8000/v1",
-            model="Qwen3-14B-Q4_K_M",
+            model="Qwen/Qwen3-14B-AWQ",
             api_key="local-vllm",
             api_key_env=None,
             timeout_seconds=90.0,

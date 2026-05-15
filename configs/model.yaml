@@ -18,9 +18,8 @@ llm:
 
   vllm:
     # Local vLLM OpenAI-compatible server started from COMMANDS.md.
-    # The served model name is set by vLLM's --served-model-name argument.
     base_url: http://127.0.0.1:8000/v1
-    model: Qwen3-14B-Q4_K_M
+    model: Qwen/Qwen3-14B-AWQ
     api_key: local-vllm
     api_key_env: null
     timeout_seconds: 120
