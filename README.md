@@ -9,15 +9,15 @@ benchmark artifacts.
 
 The current corpus is a local FastAPI tutorial snapshot in `data/raw/`. The
 default embedding backend is `sentence-transformers/all-MiniLM-L6-v2`, the
-vector store is Qdrant, and the default LLM backend is `llama-cpp-python` with a
-local GGUF model.
+vector store is Qdrant, and the default LLM backend is vLLM through its
+OpenAI-compatible local server.
 
 ## Features
 
 - Modular RAG pipeline: ingestion, chunking, embeddings, vector indexing,
   retrieval, reranking, context assembly, generation, API, UI, and evaluation.
 - YAML-based runtime configuration in `configs/`.
-- Local-first model setup with SentenceTransformers, Qdrant, and llama.cpp.
+- Local-first model setup with SentenceTransformers, Qdrant, and vLLM.
 - Replaceable adapters for embedding, vector database, reranking, and LLM
   backends.
 - FastAPI service with `/health` and `/ask` endpoints.
@@ -37,7 +37,7 @@ The main runtime components are:
 - `vectordb`: manages Qdrant collection creation, upserts, and vector search.
 - `retrieval`: retrieves ranked chunks, optionally reranks them, and builds
   generation-ready context.
-- `llm`: builds grounded prompts and calls a local llama.cpp model.
+- `llm`: builds grounded prompts and calls a local LLM backend.
 - `api`: exposes the RAG workflow through FastAPI.
 - `ui`: provides a Gradio client for local interactive use.
 - `eval`: evaluates retrieval quality against a frozen benchmark dataset.
@@ -59,7 +59,7 @@ rag_pet_project/
 │   ├── embeddings/          # embedding adapters and factory
 │   ├── eval/                # retrieval metrics and eval runner
 │   ├── ingest/              # loaders, normalizers, chunking
-│   ├── llm/                 # prompt building, LLM service, llama.cpp backend
+│   ├── llm/                 # prompt building, LLM service, backend adapters
 │   ├── retrieval/           # retriever, reranker, context builder, pipeline
 │   ├── runtime/             # device checks
 │   ├── ui/                  # Gradio UI and API client
@@ -291,7 +291,7 @@ pip install -e ".[dev,eval]"
 
 The preferred local workflow for this repository is still the Conda environment
 named `rag`, especially because local CUDA/PyTorch, SentenceTransformers,
-Qdrant, and llama.cpp installations can be platform-specific.
+Qdrant, vLLM, and optional llama.cpp installations can be platform-specific.
 
 ## Current Limitations
 

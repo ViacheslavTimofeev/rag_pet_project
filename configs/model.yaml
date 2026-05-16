@@ -29,7 +29,7 @@ llm:
     stop: []
 
   llamacpp:
-    # Baseline local model: Qwen3-14B GGUF file path.
+    # Alternative local llama.cpp model: Qwen3-14B GGUF file path.
     model_path: models/Qwen3-14B-Q4_K_M.gguf
     n_ctx: 8192
     n_gpu_layers: -1
